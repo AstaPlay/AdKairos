@@ -35,7 +35,15 @@ async function fetchCatalogFresh(session: Parameters<typeof kairoossRequest>[1])
  * apenasEstoque=false (default true).
  */
 export async function GET(request: NextRequest) {
-  const user = await requireAuthenticatedUser(request);
+  let user;
+  try {
+    user = await requireAuthenticatedUser(request);
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: { code: "auth_check_failed", message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão.") } },
+      { status: 500 },
+    );
+  }
   if (!user) {
     return NextResponse.json(
       { success: false, error: { code: "unauthenticated", message: "Sessão inválida." } },

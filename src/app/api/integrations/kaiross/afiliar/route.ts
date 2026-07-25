@@ -40,7 +40,15 @@ interface KairoossSellerProdutoResponse {
  * aviso, nunca deixamos o produto "afiliado só na Kairóss e órfão aqui".
  */
 export async function POST(request: NextRequest) {
-  const user = await requireAuthenticatedUser(request);
+  let user;
+  try {
+    user = await requireAuthenticatedUser(request);
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: { code: "auth_check_failed", message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão.") } },
+      { status: 500 },
+    );
+  }
   if (!user) {
     return NextResponse.json(
       { success: false, error: { code: "unauthenticated", message: "Sessão inválida." } },

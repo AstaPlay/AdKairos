@@ -9,7 +9,15 @@ import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
 
 /** GET ?acao=status — informa se o usuário tem uma integração Kairóss ativa (nunca retorna o token em si). */
 export async function GET(request: NextRequest) {
-  const user = await requireAuthenticatedUser(request);
+  let user;
+  try {
+    user = await requireAuthenticatedUser(request);
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: { code: "auth_check_failed", message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão.") } },
+      { status: 500 },
+    );
+  }
   if (!user) {
     return NextResponse.json(
       { success: false, error: { code: "unauthenticated", message: "Sessão inválida." } },
@@ -51,7 +59,15 @@ interface KairoossLoginBody {
  * logout: apaga o documento de integração e o cache de importação pendente.
  */
 export async function POST(request: NextRequest) {
-  const user = await requireAuthenticatedUser(request);
+  let user;
+  try {
+    user = await requireAuthenticatedUser(request);
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: { code: "auth_check_failed", message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão.") } },
+      { status: 500 },
+    );
+  }
   if (!user) {
     return NextResponse.json(
       { success: false, error: { code: "unauthenticated", message: "Sessão inválida." } },

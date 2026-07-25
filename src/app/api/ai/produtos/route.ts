@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/require-authenticated-user";
+import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
 
 interface GerarKeywordsBody {
   operation: string;
@@ -47,7 +48,15 @@ function heuristicKeywords(context: { name: string; description?: string; catego
  * quando o usuário não tiver chaves cadastradas.
  */
 export async function POST(request: NextRequest) {
-  const user = await requireAuthenticatedUser(request);
+  let user;
+  try {
+    user = await requireAuthenticatedUser(request);
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: { code: "auth_check_failed", message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão.") } },
+      { status: 500 },
+    );
+  }
   if (!user) {
     return NextResponse.json(
       { success: false, error: { code: "unauthenticated", message: "Sessão inválida." } },
