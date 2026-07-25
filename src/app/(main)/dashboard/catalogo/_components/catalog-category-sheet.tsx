@@ -9,6 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { getErrorMessage } from "@/utils/get-error-message";
 
@@ -65,6 +66,7 @@ export interface CatalogCategorySheetProps {
  * principal — evita loading cruzado entre os dois.
  */
 export function CatalogCategorySheet({ open, tipo, selected, onSelect, onClose }: CatalogCategorySheetProps) {
+  const isMobile = useIsMobile();
   const [categories, setCategories] = React.useState<string[] | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -131,8 +133,17 @@ export function CatalogCategorySheet({ open, tipo, selected, onSelect, onClose }
 
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
-      <SheetContent className="overflow-y-auto sm:max-w-sm">
-        <SheetHeader>
+      <SheetContent
+        side={isMobile ? "bottom" : "right"}
+        className={cn("flex flex-col gap-0 overflow-hidden p-0 sm:max-w-sm", isMobile && "h-[85vh] rounded-t-3xl border-t")}
+      >
+        {isMobile && (
+          <div className="flex shrink-0 justify-center pt-2.5 pb-1">
+            <div className="h-1 w-9 rounded-full bg-muted-foreground/25" />
+          </div>
+        )}
+
+        <SheetHeader className="shrink-0 gap-0.5 pb-3">
           <SheetTitle className="flex items-center gap-1.5">
             <LayoutGrid className="size-4 text-primary" strokeWidth={2} />
             Categorias
@@ -140,7 +151,7 @@ export function CatalogCategorySheet({ open, tipo, selected, onSelect, onClose }
           <SheetDescription>Filtre o catálogo por categoria ou subcategoria.</SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-col gap-3 px-4 pb-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-4">
           {selected && (
             <button
               type="button"

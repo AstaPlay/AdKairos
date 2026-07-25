@@ -15,6 +15,7 @@ import {
   X as XIcon,
 } from "lucide-react";
 
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
 import { useAsyncAction } from "@/hooks/use-async-action";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { calcularPrecificacao, formatarMoeda, STATUS_MARGEM_STYLE } from "@/lib/kaiross-pricing";
 import { cn } from "@/lib/utils";
 
@@ -139,6 +141,7 @@ export function CatalogAffiliateSheet({
   onViewExisting?: (localProductId: string) => void;
 }) {
   const isOpen = product !== null;
+  const isMobile = useIsMobile();
 
   const [activeImage, setActiveImage] = React.useState(0);
   const [precoVenda, setPrecoVenda] = React.useState(0);
@@ -245,8 +248,20 @@ export function CatalogAffiliateSheet({
 
   return (
     <Sheet open={isOpen} onOpenChange={(next) => !next && onClose()}>
-      <SheetContent className="overflow-y-auto sm:max-w-lg">
-        <SheetHeader>
+      <SheetContent
+        side={isMobile ? "bottom" : "right"}
+        className={cn(
+          "flex flex-col gap-0 overflow-hidden p-0 sm:max-w-lg",
+          isMobile && "h-[92vh] rounded-t-3xl border-t",
+        )}
+      >
+        {isMobile && (
+          <div className="flex shrink-0 justify-center pt-2.5 pb-1">
+            <div className="h-1 w-9 rounded-full bg-muted-foreground/25" />
+          </div>
+        )}
+
+        <SheetHeader className="shrink-0 gap-0.5 pb-3">
           <SheetTitle className="flex items-center gap-1.5">
             <Sparkles className="size-4 text-primary" strokeWidth={2} />
             Precificar produto
@@ -254,9 +269,9 @@ export function CatalogAffiliateSheet({
           <SheetDescription>{product.category || "Kairóss"}</SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-col gap-5 px-4 pb-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-4">
           <div className="flex flex-col gap-2">
-            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border bg-muted">
+            <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl border bg-muted">
               {coverImage ? (
                 // eslint-disable-next-line @next/next/no-img-element -- imagem remota do catálogo Kairóss
                 <img src={coverImage} alt={product.name} className="h-full w-full object-cover" />
@@ -264,6 +279,12 @@ export function CatalogAffiliateSheet({
                 <div className="flex h-full items-center justify-center text-muted-foreground/40">
                   <ImageOff className="size-8" strokeWidth={1.5} />
                 </div>
+              )}
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/35 to-transparent" />
+              {product.category && (
+                <span className="absolute bottom-2.5 left-2.5 rounded-full bg-black/45 px-2.5 py-1 font-mono text-[10px] font-medium tracking-[0.04em] text-white backdrop-blur-sm">
+                  {product.category}
+                </span>
               )}
             </div>
             {product.images.length > 1 && (
@@ -293,7 +314,7 @@ export function CatalogAffiliateSheet({
             )}
           </div>
 
-          <div className="rounded-xl border bg-card p-4">
+          <div className="rounded-2xl border bg-card p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[11px] font-medium text-muted-foreground">Preço de referência da Kairóss</p>
@@ -371,85 +392,110 @@ export function CatalogAffiliateSheet({
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 rounded-xl border p-4">
-            <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Truck className="size-3.5" strokeWidth={2} />
-              Quem assume o frete?
-            </Label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setVendedorAssumeFrete(false)}
-                className={cn(
-                  "rounded-lg border px-3 py-2.5 text-left text-[12px] transition-all duration-200",
-                  !vendedorAssumeFrete ? "border-primary bg-primary/[0.08]" : "text-muted-foreground hover:bg-accent",
+          <Accordion type="multiple" defaultValue={["frete"]} className="rounded-2xl border px-4">
+            <AccordionItem value="frete">
+              <AccordionTrigger className="py-3.5 hover:no-underline">
+                <div className="flex items-center gap-2">
+                  <Truck className="size-3.5 text-muted-foreground" strokeWidth={2} />
+                  <div className="text-left">
+                    <p className="text-[13px] font-semibold">Frete</p>
+                    <p className="text-[11px] font-normal text-muted-foreground">
+                      {vendedorAssumeFrete ? "Você assume o custo" : "Cliente paga no checkout"}
+                    </p>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="flex flex-col gap-2 pb-4">
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setVendedorAssumeFrete(false)}
+                    className={cn(
+                      "rounded-lg border px-3 py-2.5 text-left text-[12px] transition-all duration-200",
+                      !vendedorAssumeFrete ? "border-primary bg-primary/[0.08]" : "text-muted-foreground hover:bg-accent",
+                    )}
+                  >
+                    <p className="font-semibold text-foreground">Cliente paga</p>
+                    <p className="mt-0.5 text-[10.5px] opacity-80">Calculado no checkout</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setVendedorAssumeFrete(true)}
+                    className={cn(
+                      "rounded-lg border px-3 py-2.5 text-left text-[12px] transition-all duration-200",
+                      vendedorAssumeFrete ? "border-primary bg-primary/[0.08]" : "text-muted-foreground hover:bg-accent",
+                    )}
+                  >
+                    <p className="font-semibold text-foreground">Você assume</p>
+                    <p className="mt-0.5 text-[10.5px] opacity-80">+conversão, -margem</p>
+                  </button>
+                </div>
+                {vendedorAssumeFrete && (
+                  <label className="animate-in fade-in mt-1 flex items-center justify-between gap-3 text-[12px]">
+                    <span className="text-muted-foreground">Custo estimado do frete</span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.5}
+                      value={custoFrete || ""}
+                      onChange={(event) => setCustoFrete(Number(event.target.value) || 0)}
+                      placeholder="0,00"
+                      className="w-24 rounded-md border bg-background px-2 py-1 text-right font-mono focus:border-primary focus:outline-none"
+                    />
+                  </label>
                 )}
-              >
-                <p className="font-semibold text-foreground">Cliente paga</p>
-                <p className="mt-0.5 text-[10.5px] opacity-80">Calculado no checkout</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => setVendedorAssumeFrete(true)}
-                className={cn(
-                  "rounded-lg border px-3 py-2.5 text-left text-[12px] transition-all duration-200",
-                  vendedorAssumeFrete ? "border-primary bg-primary/[0.08]" : "text-muted-foreground hover:bg-accent",
-                )}
-              >
-                <p className="font-semibold text-foreground">Você assume</p>
-                <p className="mt-0.5 text-[10.5px] opacity-80">+conversão, -margem</p>
-              </button>
-            </div>
-            {vendedorAssumeFrete && (
-              <label className="animate-in fade-in mt-1 flex items-center justify-between gap-3 text-[12px]">
-                <span className="text-muted-foreground">Custo estimado do frete</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={0.5}
-                  value={custoFrete || ""}
-                  onChange={(event) => setCustoFrete(Number(event.target.value) || 0)}
-                  placeholder="0,00"
-                  className="w-24 rounded-md border bg-background px-2 py-1 text-right font-mono focus:border-primary focus:outline-none"
-                />
-              </label>
-            )}
-          </div>
+              </AccordionContent>
+            </AccordionItem>
 
-          <div className="flex flex-col gap-2 rounded-xl border p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[13px] font-semibold">Palavras-chave para o bot</p>
-                <p className="mt-0.5 text-[11.5px] text-muted-foreground">Ajuda seu bot de WhatsApp a reconhecer este produto.</p>
-              </div>
-              <Button type="button" variant="outline" size="sm" onClick={handleGerarPalavrasChave} disabled={keywordsAction.isLoading}>
-                <Sparkles data-icon="inline-start" className="size-3.5" strokeWidth={2} />
-                {keywordsAction.isLoading ? "Gerando..." : "Gerar com IA"}
-              </Button>
-            </div>
-            {tags.length > 0 && (
-              <div className="animate-in fade-in flex flex-wrap gap-1.5">
-                {tags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="gap-1 pr-1.5 text-[10.5px]">
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => setTags((current) => current.filter((item) => item !== tag))}
-                      aria-label={`Remover ${tag}`}
-                      className="text-muted-foreground/70 transition-colors hover:text-destructive"
-                    >
-                      <XIcon className="size-2.5" strokeWidth={2.5} />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-            )}
-            {keywordsAction.error && (
-              <Alert variant="destructive" className="mt-1">
-                <AlertDescription>{keywordsAction.error}</AlertDescription>
-              </Alert>
-            )}
-          </div>
+            <AccordionItem value="keywords">
+              <AccordionTrigger className="py-3.5 hover:no-underline">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="size-3.5 text-muted-foreground" strokeWidth={2} />
+                  <div className="text-left">
+                    <p className="text-[13px] font-semibold">Palavras-chave para o bot</p>
+                    <p className="text-[11px] font-normal text-muted-foreground">
+                      {tags.length > 0 ? `${tags.length} palavra${tags.length > 1 ? "s" : ""} definida${tags.length > 1 ? "s" : ""}` : "Ajuda o bot de WhatsApp a reconhecer o produto"}
+                    </p>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="flex flex-col gap-2 pb-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGerarPalavrasChave}
+                  disabled={keywordsAction.isLoading}
+                  className="w-fit"
+                >
+                  <Sparkles data-icon="inline-start" className="size-3.5" strokeWidth={2} />
+                  {keywordsAction.isLoading ? "Gerando..." : "Gerar com IA"}
+                </Button>
+                {tags.length > 0 && (
+                  <div className="animate-in fade-in flex flex-wrap gap-1.5">
+                    {tags.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="gap-1 pr-1.5 text-[10.5px]">
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => setTags((current) => current.filter((item) => item !== tag))}
+                          aria-label={`Remover ${tag}`}
+                          className="text-muted-foreground/70 transition-colors hover:text-destructive"
+                        >
+                          <XIcon className="size-2.5" strokeWidth={2.5} />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                {keywordsAction.error && (
+                  <Alert variant="destructive" className="mt-1">
+                    <AlertDescription>{keywordsAction.error}</AlertDescription>
+                  </Alert>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
 
           {afiliarState.error && !afiliarState.alreadyAffiliatedProductId && (
             <Alert variant="destructive">
@@ -458,7 +504,7 @@ export function CatalogAffiliateSheet({
           )}
 
           {afiliarState.alreadyAffiliatedProductId && (
-            <div className="animate-in fade-in flex flex-col gap-3 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.06] p-4">
+            <div className="animate-in fade-in flex flex-col gap-3 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.06] p-4">
               <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 className="size-4 shrink-0" strokeWidth={2} />
                 <p className="text-[13px] font-semibold">Este produto já está no seu catálogo</p>
@@ -471,7 +517,7 @@ export function CatalogAffiliateSheet({
           )}
 
           {afiliarState.data && (
-            <div className="animate-in fade-in flex flex-col gap-3 rounded-xl border border-primary/25 bg-primary/[0.06] p-4">
+            <div className="animate-in fade-in flex flex-col gap-3 rounded-2xl border border-primary/25 bg-primary/[0.06] p-4">
               <div className="flex items-center gap-2 text-primary">
                 <CheckCircle2 className="size-4 shrink-0" strokeWidth={2} />
                 <p className="text-[13px] font-semibold">Produto salvo e ativo na sua vitrine</p>
@@ -521,7 +567,24 @@ export function CatalogAffiliateSheet({
           )}
         </div>
 
-        <SheetFooter>
+        <SheetFooter className="shrink-0 gap-3 border-t bg-popover">
+          {!afiliarState.data && !afiliarState.alreadyAffiliatedProductId && (
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10.5px] text-muted-foreground">Preço de venda</p>
+                <p className="font-mono text-base font-bold tabular-nums">R$ {formatarMoeda(precoVenda)}</p>
+              </div>
+              <div className={cn("rounded-lg border px-2.5 py-1 text-right", statusStyle.bg, statusStyle.border)}>
+                <p className={cn("font-mono text-[10px] font-bold uppercase tracking-[0.05em]", statusStyle.text)}>
+                  {statusStyle.label}
+                </p>
+                <p className={cn("font-mono text-[11px] font-semibold tabular-nums", statusStyle.text)}>
+                  margem {calculo.margem.toFixed(0)}%
+                </p>
+              </div>
+            </div>
+          )}
+
           {afiliarState.alreadyAffiliatedProductId ? (
             <div className="flex gap-2.5">
               <Button type="button" variant="outline" onClick={onClose} className="flex-1">
