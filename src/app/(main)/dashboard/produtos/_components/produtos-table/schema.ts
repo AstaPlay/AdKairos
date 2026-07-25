@@ -20,6 +20,16 @@ const productSchema = z.object({
   tags: z.array(z.string()).optional(),
   salesCount: z.number().optional(),
   salesHistory: z.array(z.number()).optional(),
+  /** Presentes apenas quando `source === "kaiross"` (produto afiliado). */
+  checkoutLink: z.string().optional(),
+  kairossProductId: z.string().optional(),
+  /** Conteúdo de IA já gerado e salvo para este produto. */
+  aiContent: z
+    .object({
+      keywords: z.array(z.string()).optional(),
+      keywordsGeneratedAt: z.string().optional(),
+    })
+    .optional(),
 });
 
 export const productsSchema = z.array(productSchema);
