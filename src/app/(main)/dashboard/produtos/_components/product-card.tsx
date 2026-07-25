@@ -1,0 +1,120 @@
+"use client";
+
+import { ImageOff, Sparkles } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+
+import type { ProductRow, ProductStatus } from "./produtos-table/schema";
+
+const STATUS_LABEL: Record<ProductStatus, string> = {
+  draft: "Rascunho",
+  active: "Ativo",
+  paused: "Pausado",
+  out_of_stock: "Sem estoque",
+};
+
+const STATUS_BADGE_CLASS: Record<ProductStatus, string> = {
+  draft: "border-border bg-muted text-muted-foreground",
+  active:
+    "border-green-200 bg-green-500/10 text-green-700 dark:border-green-900/40 dark:bg-green-500/15 dark:text-green-300",
+  paused:
+    "border-amber-200 bg-amber-500/10 text-amber-700 dark:border-amber-900/40 dark:bg-amber-500/15 dark:text-amber-300",
+  out_of_stock: "border-destructive/20 bg-destructive/10 text-destructive",
+};
+
+function currency(value: number) {
+  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+export function ProductCard({
+  product,
+  selected,
+  highlighted,
+  onToggleSelect,
+  onOpenDetail,
+}: {
+  product: ProductRow;
+  selected: boolean;
+  highlighted?: boolean;
+  onToggleSelect: (checked: boolean) => void;
+  onOpenDetail: () => void;
+}) {
+  return (
+    <Card
+      className={cn(
+        "gap-3 py-0 transition-colors",
+        "cursor-pointer hover:ring-primary/40",
+        highlighted && "ring-2 ring-primary/50",
+      )}
+      role="button"
+      tabIndex={0}
+      onClick={onOpenDetail}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpenDetail();
+        }
+      }}
+    >
+      <div className="relative aspect-[4/3] shrink-0 overflow-hidden bg-muted">
+        {product.image ? (
+          // eslint-disable-next-line @next/next/no-img-element -- imagem remota do catálogo
+          <img src={product.image} alt={product.name} loading="lazy" className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full items-center justify-center text-muted-foreground/40">
+            <ImageOff className="size-6" strokeWidth={1.5} />
+          </div>
+        )}
+
+        <div className="absolute left-2 top-2 flex flex-col items-start gap-1">
+          <Badge variant="outline" className={cn("text-[10px]", STATUS_BADGE_CLASS[product.status])}>
+            {STATUS_LABEL[product.status]}
+          </Badge>
+        </div>
+
+        {product.source === "kaiross" && (
+          <div className="absolute right-2 top-2">
+            <Badge
+              variant="outline"
+              className="gap-1 border-white/20 bg-black/55 text-[10px] text-white backdrop-blur-md"
+            >
+              <Sparkles className="size-3" strokeWidth={2} />
+              Kairóss
+            </Badge>
+          </div>
+        )}
+
+        <div className="absolute bottom-2 left-2" onClick={(event) => event.stopPropagation()}>
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={(event) => onToggleSelect(event.target.checked)}
+            aria-label={`Selecionar ${product.name}`}
+            className="size-4 cursor-pointer rounded border-white/40 bg-black/40 accent-primary"
+          />
+        </div>
+      </div>
+
+      <CardContent className="flex flex-col gap-2 pb-4">
+        <div className="flex flex-col gap-0.5">
+          {product.brand && (
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {product.brand}
+            </span>
+          )}
+          <h3 className="line-clamp-2 min-h-[2.4em] text-sm font-medium leading-snug">{product.name}</h3>
+          <span className="text-muted-foreground text-xs">{product.category}</span>
+        </div>
+
+        <div className="mt-1 flex items-end justify-between">
+          <span className="text-lg font-semibold tabular-nums text-primary">{currency(product.price)}</span>
+          <span className={cn("text-xs tabular-nums", product.stock === 0 ? "text-destructive" : "text-muted-foreground")}>
+            {product.stock} un
+          </span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

@@ -1,0 +1,201 @@
+[
+  {
+    "id": "PRD-1001",
+    "name": "Fone Bluetooth ProSound X1",
+    "category": "Eletrônicos",
+    "price": 189.9,
+    "stock": 42,
+    "status": "active",
+    "source": "kaiross",
+    "createdAt": "2026-06-02T10:00:00.000Z",
+    "image": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=200&h=200&fit=crop",
+    "cost": 112.0,
+    "sku": "FN-X1-BT",
+    "brand": "ProSound",
+    "description": "Fone bluetooth over-ear com cancelamento de ruído ativo e 30h de bateria.",
+    "tags": [
+      "bluetooth",
+      "audio",
+      "cancelamento-ruido"
+    ],
+    "salesCount": 184,
+    "salesHistory": [
+      20,
+      28,
+      31,
+      40,
+      38,
+      47
+    ]
+  },
+  {
+    "id": "PRD-1002",
+    "name": "Camiseta Dry Fit Performance",
+    "category": "Vestuário",
+    "price": 79.9,
+    "stock": 0,
+    "status": "out_of_stock",
+    "source": "kaiross",
+    "createdAt": "2026-06-05T10:00:00.000Z",
+    "image": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop",
+    "cost": 34.0,
+    "sku": "VT-DF-PERF",
+    "brand": "Performa",
+    "description": "Camiseta dry fit de secagem rápida, ideal para treino.",
+    "tags": [
+      "fitness",
+      "vestuario"
+    ],
+    "salesCount": 96,
+    "salesHistory": [
+      18,
+      15,
+      20,
+      22,
+      12,
+      9
+    ]
+  },
+  {
+    "id": "PRD-1003",
+    "name": "Suporte de Celular Veicular",
+    "category": "Acessórios",
+    "price": 39.5,
+    "stock": 120,
+    "status": "active",
+    "source": "manual",
+    "createdAt": "2026-06-10T10:00:00.000Z",
+    "image": "https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=200&h=200&fit=crop",
+    "cost": 14.5,
+    "sku": "AC-SUP-CEL",
+    "brand": null,
+    "description": "Suporte veicular universal com fixação por ventosa.",
+    "tags": [
+      "carro",
+      "acessorio"
+    ],
+    "salesCount": 310,
+    "salesHistory": [
+      40,
+      45,
+      52,
+      58,
+      60,
+      55
+    ]
+  },
+  {
+    "id": "PRD-1004",
+    "name": "Kit Skincare Facial Noturno",
+    "category": "Beleza",
+    "price": 129.0,
+    "stock": 15,
+    "status": "paused",
+    "source": "kaiross",
+    "createdAt": "2026-06-14T10:00:00.000Z",
+    "image": "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=200&h=200&fit=crop",
+    "cost": 58.0,
+    "sku": "BL-SKC-NGT",
+    "brand": "Lumière",
+    "description": "Kit skincare noturno com sérum, hidratante e óleo facial.",
+    "tags": [
+      "skincare",
+      "beleza",
+      "noturno"
+    ],
+    "salesCount": 64,
+    "salesHistory": [
+      10,
+      12,
+      14,
+      11,
+      9,
+      8
+    ]
+  },
+  {
+    "id": "PRD-1005",
+    "name": "Mochila Executiva Impermeável",
+    "category": "Acessórios",
+    "price": 249.0,
+    "stock": 8,
+    "status": "active",
+    "source": "manual",
+    "createdAt": "2026-06-18T10:00:00.000Z",
+    "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=200&h=200&fit=crop",
+    "cost": 118.0,
+    "sku": "AC-MOCH-EXE",
+    "brand": "UrbanTrek",
+    "description": "Mochila executiva impermeável com compartimento para notebook.",
+    "tags": [
+      "mochila",
+      "executivo",
+      "impermeavel"
+    ],
+    "salesCount": 41,
+    "salesHistory": [
+      5,
+      6,
+      7,
+      9,
+      8,
+      6
+    ]
+  },
+  {
+    "id": "PRD-1006",
+    "name": "Luminária LED de Mesa Regulável",
+    "category": "Casa",
+    "price": 99.9,
+    "stock": 0,
+    "status": "draft",
+    "source": "kaiross",
+    "createdAt": "2026-06-21T10:00:00.000Z",
+    "image": null,
+    "cost": 42.0,
+    "sku": "CS-LED-MESA",
+    "brand": null,
+    "description": "Luminária LED de mesa com 3 níveis de intensidade regulável.",
+    "tags": [
+      "casa",
+      "iluminacao"
+    ],
+    "salesCount": 0,
+    "salesHistory": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "id": "PRD-1007",
+    "name": "Garrafa Térmica Inox 1L",
+    "category": "Casa",
+    "price": 59.9,
+    "stock": 60,
+    "status": "active",
+    "source": "kaiross",
+    "createdAt": "2026-06-25T10:00:00.000Z",
+    "image": "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=200&h=200&fit=crop",
+    "cost": 22.0,
+    "sku": "CS-GRF-INOX",
+    "brand": "Thermofix",
+    "description": "Garrafa térmica de aço inox, mantém temperatura por até 12h.",
+    "tags": [
+      "casa",
+      "termica"
+    ],
+    "salesCount": 152,
+    "salesHistory": [
+      22,
+      25,
+      24,
+      30,
+      26,
+      25
+    ]
+  }
+]
