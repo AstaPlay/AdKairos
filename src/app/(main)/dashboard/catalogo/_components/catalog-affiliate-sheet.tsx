@@ -142,6 +142,7 @@ export function CatalogAffiliateSheet({
 }) {
   const isOpen = product !== null;
   const isMobile = useIsMobile();
+  const scrollRef = React.useRef<HTMLDivElement>(null);
 
   const [activeImage, setActiveImage] = React.useState(0);
   const [precoVenda, setPrecoVenda] = React.useState(0);
@@ -158,6 +159,7 @@ export function CatalogAffiliateSheet({
   React.useEffect(() => {
     if (!product) return;
     setActiveImage(0);
+    scrollRef.current?.scrollTo({ top: 0 });
     setPrecoVenda(Math.max(product.price * 1.4, product.price + 10));
     setVendedorAssumeFrete(false);
     setCustoFrete(0);
@@ -250,6 +252,7 @@ export function CatalogAffiliateSheet({
     <Sheet open={isOpen} onOpenChange={(next) => !next && onClose()}>
       <SheetContent
         side={isMobile ? "bottom" : "right"}
+        onOpenAutoFocus={(event) => event.preventDefault()}
         className={cn(
           "flex flex-col gap-0 overflow-hidden p-0 sm:max-w-lg",
           isMobile && "h-[92vh] rounded-t-3xl border-t",
@@ -269,7 +272,7 @@ export function CatalogAffiliateSheet({
           <SheetDescription>{product.category || "Kairóss"}</SheetDescription>
         </SheetHeader>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-4">
+        <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-4">
           <div className="flex flex-col gap-2">
             <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl border bg-muted">
               {coverImage ? (

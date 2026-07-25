@@ -71,6 +71,12 @@ export function CatalogCategorySheet({ open, tipo, selected, onSelect, onClose }
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [expanded, setExpanded] = React.useState<Set<string>>(new Set());
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [open]);
 
   React.useEffect(() => {
     if (!open) return;
@@ -135,6 +141,7 @@ export function CatalogCategorySheet({ open, tipo, selected, onSelect, onClose }
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
       <SheetContent
         side={isMobile ? "bottom" : "right"}
+        onOpenAutoFocus={(event) => event.preventDefault()}
         className={cn("flex flex-col gap-0 overflow-hidden p-0 sm:max-w-sm", isMobile && "h-[85vh] rounded-t-3xl border-t")}
       >
         {isMobile && (
@@ -151,7 +158,7 @@ export function CatalogCategorySheet({ open, tipo, selected, onSelect, onClose }
           <SheetDescription>Filtre o catálogo por categoria ou subcategoria.</SheetDescription>
         </SheetHeader>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-4">
+        <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-4">
           {selected && (
             <button
               type="button"
