@@ -1,3 +1,5 @@
+import { getFirebaseAuthErrorMessage } from "@/utils/firebase-auth-error";
+
 function isNetworkError(error: unknown): boolean {
   if (typeof navigator !== "undefined" && navigator.onLine === false) return true;
   if (!(error instanceof Error)) return false;
@@ -13,6 +15,8 @@ export function getErrorMessage(error: unknown): string {
   if (isNetworkError(error)) {
     return "Sem conexão com a internet. Verifique sua rede e tente novamente.";
   }
+  const firebaseMessage = getFirebaseAuthErrorMessage(error, "");
+  if (firebaseMessage) return firebaseMessage;
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;
   return "Algo deu errado. Tente novamente.";
