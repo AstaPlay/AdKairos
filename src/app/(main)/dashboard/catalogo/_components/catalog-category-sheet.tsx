@@ -142,7 +142,8 @@ export function CatalogCategorySheet({ open, tipo, selected, onSelect, onClose }
       <SheetContent
         side={isMobile ? "bottom" : "right"}
         onOpenAutoFocus={(event) => event.preventDefault()}
-        className={cn("flex flex-col gap-0 overflow-hidden p-0 sm:max-w-sm", isMobile && "h-[85vh] rounded-t-3xl border-t")}
+        style={isMobile ? { height: "85vh", maxHeight: "85vh" } : undefined}
+        className={cn("flex flex-col gap-0 overflow-hidden p-0 sm:max-w-sm", isMobile && "rounded-t-3xl border-t")}
       >
         {isMobile && (
           <div className="flex shrink-0 justify-center pt-2.5 pb-1">
@@ -158,7 +159,11 @@ export function CatalogCategorySheet({ open, tipo, selected, onSelect, onClose }
           <SheetDescription>Filtre o catálogo por categoria ou subcategoria.</SheetDescription>
         </SheetHeader>
 
-        <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-4">
+        <div
+          ref={scrollRef}
+          className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-4"
+          style={{ touchAction: "pan-y", WebkitOverflowScrolling: "touch" }}
+        >
           {selected && (
             <button
               type="button"

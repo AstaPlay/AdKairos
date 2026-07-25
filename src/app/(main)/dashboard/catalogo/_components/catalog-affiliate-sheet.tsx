@@ -253,9 +253,10 @@ export function CatalogAffiliateSheet({
       <SheetContent
         side={isMobile ? "bottom" : "right"}
         onOpenAutoFocus={(event) => event.preventDefault()}
+        style={isMobile ? { height: "92vh", maxHeight: "92vh" } : undefined}
         className={cn(
           "flex flex-col gap-0 overflow-hidden p-0 sm:max-w-lg",
-          isMobile && "h-[92vh] rounded-t-3xl border-t",
+          isMobile && "rounded-t-3xl border-t",
         )}
       >
         {isMobile && (
@@ -272,7 +273,11 @@ export function CatalogAffiliateSheet({
           <SheetDescription>{product.category || "Kairóss"}</SheetDescription>
         </SheetHeader>
 
-        <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-4">
+        <div
+          ref={scrollRef}
+          className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-4"
+          style={{ touchAction: "pan-y", WebkitOverflowScrolling: "touch" }}
+        >
           <div className="flex flex-col gap-2">
             <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl border bg-muted">
               {coverImage ? (
