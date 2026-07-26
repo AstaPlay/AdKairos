@@ -164,6 +164,12 @@ export function ProductDetailSheet({
     if (generated) await onGenerateTags(generated);
   }
 
+  const [imageFailed, setImageFailed] = React.useState(false);
+
+  React.useEffect(() => {
+    setImageFailed(false);
+  }, [product?.image]);
+
   if (!product) {
     return <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()} />;
   }
@@ -211,12 +217,18 @@ export function ProductDetailSheet({
         >
           {/* Imagem grande — mesma linguagem visual do sheet de afiliação */}
           <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border bg-muted">
-            {product.image ? (
+            {product.image && !imageFailed ? (
               // eslint-disable-next-line @next/next/no-img-element -- imagem remota do catálogo
-              <img src={product.image} alt={product.name} className="h-full w-full object-contain" />
+              <img
+                src={product.image}
+                alt={product.name}
+                className="h-full w-full object-contain"
+                onError={() => setImageFailed(true)}
+              />
             ) : (
-              <div className="flex h-full items-center justify-center text-muted-foreground/40">
+              <div className="flex h-full flex-col items-center justify-center gap-1.5 text-muted-foreground/50">
                 <ImageOff className="size-8" strokeWidth={1.5} />
+                {imageFailed && <p className="text-[11px]">Não foi possível carregar a imagem</p>}
               </div>
             )}
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/35 to-transparent" />

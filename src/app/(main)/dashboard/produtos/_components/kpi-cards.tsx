@@ -3,44 +3,41 @@
 import * as React from "react";
 
 import { Package, PackageX, ShoppingBasket, Sparkles } from "lucide-react";
-import { Area, AreaChart, ResponsiveContainer } from "recharts";
+import { RadialBar, RadialBarChart } from "recharts";
 
 import { Card, CardAction, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 
 import type { ProductRow } from "./produtos-table/schema";
 
-function Sparkline({ data, color }: { data: number[]; color: string }) {
-  const hasEnoughData = data.length >= 2 && data.some((value) => value > 0);
-
-  if (!hasEnoughData) {
-    return (
-      <div className="flex h-10 w-20 items-end" aria-hidden="true">
-        <div className="h-px w-full border-t border-dashed border-muted-foreground/25" />
-      </div>
-    );
-  }
-
-  const points = data.map((value, index) => ({ index, value }));
+/**
+ * Anel de proporção — em vez de uma série temporal (que exigiria um
+ * histórico diário de vendas que este sistema não grava hoje: ver nota em
+ * `map-product-row.ts` sobre `salesHistory` nunca ter sido persistido de
+ * verdade), mostramos a proporção real e atual desta métrica sobre o total
+ * de produtos. É sempre dado real, nunca inventado, e sempre disponível —
+ * mesmo com 1 produto só no catálogo.
+ */
+function ProportionRing({ value, total, color }: { value: number; total: number; color: string }) {
+  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+  const data = [{ name: "value", value: pct, fill: color }];
 
   return (
-    <div className="h-10 w-20">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={points} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
-          <defs>
-            <linearGradient id={`spark-${color.replace("#", "")}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={0.4} />
-              <stop offset="100%" stopColor={color} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <Area
-            type="monotone"
-            dataKey="value"
-            stroke={color}
-            strokeWidth={1.5}
-            fill={`url(#spark-${color.replace("#", "")})`}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+    <div className="relative h-11 w-11 shrink-0">
+      <RadialBarChart
+        width={44}
+        height={44}
+        innerRadius={14}
+        outerRadius={20}
+        barSize={5}
+        data={data}
+        startAngle={90}
+        endAngle={90 - 360 * (pct / 100)}
+      >
+        <RadialBar dataKey="value" cornerRadius={4} background={{ fill: "var(--muted)" }} fill={color} />
+      </RadialBarChart>
+      <span className="absolute inset-0 flex items-center justify-center font-mono text-[9px] font-semibold tabular-nums text-muted-foreground">
+        {pct}%
+      </span>
     </div>
   );
 }
@@ -50,14 +47,6 @@ export function KpiCards({ products }: { products: ProductRow[] }) {
   const active = products.filter((product) => product.status === "active").length;
   const outOfStock = products.filter((product) => product.status === "out_of_stock" || product.stock === 0).length;
   const fromKaiross = products.filter((product) => product.source === "kaiross").length;
-
-  const totalHistory = React.useMemo(() => aggregateHistory(products, () => true), [products]);
-  const activeHistory = React.useMemo(() => aggregateHistory(products, (p) => p.status === "active"), [products]);
-  const outOfStockHistory = React.useMemo(
-    () => aggregateHistory(products, (p) => p.status === "out_of_stock" || p.stock === 0),
-    [products],
-  );
-  const kaiRossHistory = React.useMemo(() => aggregateHistory(products, (p) => p.source === "kaiross"), [products]);
 
   return (
     <section className="space-y-5">
@@ -76,9 +65,9 @@ export function KpiCards({ products }: { products: ProductRow[] }) {
               <Package className="size-4 text-muted-foreground" />
             </CardAction>
           </CardHeader>
-          <CardContent className="flex min-h-10 items-end justify-between">
+          <CardContent className="flex min-h-11 items-end justify-between">
             <span className="text-3xl leading-none tracking-tight">{total}</span>
-            <Sparkline data={totalHistory} color="#6366f1" />
+            <ProportionRing value={active} total={total} color="#6366f1" />
           </CardContent>
         </Card>
 
@@ -89,9 +78,9 @@ export function KpiCards({ products }: { products: ProductRow[] }) {
               <ShoppingBasket className="size-4 text-muted-foreground" />
             </CardAction>
           </CardHeader>
-          <CardContent className="flex min-h-10 items-end justify-between">
+          <CardContent className="flex min-h-11 items-end justify-between">
             <span className="text-3xl leading-none tracking-tight">{active}</span>
-            <Sparkline data={activeHistory} color="#22c55e" />
+            <ProportionRing value={active} total={total} color="#22c55e" />
           </CardContent>
         </Card>
 
@@ -102,9 +91,9 @@ export function KpiCards({ products }: { products: ProductRow[] }) {
               <PackageX className="size-4 text-muted-foreground" />
             </CardAction>
           </CardHeader>
-          <CardContent className="flex min-h-10 items-end justify-between">
+          <CardContent className="flex min-h-11 items-end justify-between">
             <span className="text-3xl leading-none tracking-tight">{outOfStock}</span>
-            <Sparkline data={outOfStockHistory} color="#ef4444" />
+            <ProportionRing value={outOfStock} total={total} color="#ef4444" />
           </CardContent>
         </Card>
 
@@ -115,25 +104,12 @@ export function KpiCards({ products }: { products: ProductRow[] }) {
               <Sparkles className="size-4 text-muted-foreground" />
             </CardAction>
           </CardHeader>
-          <CardContent className="flex min-h-10 items-end justify-between">
+          <CardContent className="flex min-h-11 items-end justify-between">
             <span className="text-3xl leading-none tracking-tight">{fromKaiross}</span>
-            <Sparkline data={kaiRossHistory} color="#a855f7" />
+            <ProportionRing value={fromKaiross} total={total} color="#a855f7" />
           </CardContent>
         </Card>
       </div>
     </section>
   );
-}
-
-function aggregateHistory(items: ProductRow[], predicate: (item: ProductRow) => boolean) {
-  const relevant = items.filter(predicate);
-  const length = 6;
-  const totals = Array.from({ length }, () => 0);
-  for (const item of relevant) {
-    const history = item.salesHistory ?? [];
-    for (let i = 0; i < length; i += 1) {
-      totals[i] += history[i] ?? 0;
-    }
-  }
-  return totals;
 }
