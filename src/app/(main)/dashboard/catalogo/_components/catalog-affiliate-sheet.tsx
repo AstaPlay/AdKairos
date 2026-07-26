@@ -5,6 +5,7 @@ import * as React from "react";
 import {
   Check,
   CheckCircle2,
+  ChevronDown,
   Copy,
   ExternalLink,
   ImageOff,
@@ -15,7 +16,6 @@ import {
   X as XIcon,
 } from "lucide-react";
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -145,6 +145,8 @@ export function CatalogAffiliateSheet({
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
   const [activeImage, setActiveImage] = React.useState(0);
+  const [freteOpen, setFreteOpen] = React.useState(true);
+  const [keywordsOpen, setKeywordsOpen] = React.useState(false);
   const [precoVenda, setPrecoVenda] = React.useState(0);
   const [vendedorAssumeFrete, setVendedorAssumeFrete] = React.useState(false);
   const [custoFrete, setCustoFrete] = React.useState(0);
@@ -198,7 +200,7 @@ export function CatalogAffiliateSheet({
       custoFrete,
       clientePagaFrete: !vendedorAssumeFrete,
     });
-    if (result) setPrecoVenda(result.precoSugeridoIA);
+    if (result) setPrecoVenda(Math.min(Math.max(result.precoSugeridoIA, sliderMin), sliderMax));
   }
 
   async function handleConfirmar() {
@@ -245,7 +247,9 @@ export function CatalogAffiliateSheet({
 
   const statusStyle = STATUS_MARGEM_STYLE[calculo.status];
   const sliderMin = Math.max(product.price, calculo.precoMin * 0.9);
-  const sliderMax = Math.max(calculo.precoRec * 2.2, precoVenda * 1.4, product.price * 3);
+  // Teto fixo: até 2,5x o preço de referência da Kairóss (ou 30% acima do recomendado,
+  // o que for maior) — evita que o limite fique "correndo atrás" de um preço já alto.
+  const sliderMax = Math.max(calculo.precoRec * 1.3, product.price * 2.5);
   const coverImage = product.images[activeImage] ?? product.images[0];
 
   return (
@@ -279,10 +283,10 @@ export function CatalogAffiliateSheet({
           style={{ touchAction: "pan-y", WebkitOverflowScrolling: "touch" }}
         >
           <div className="flex flex-col gap-2">
-            <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl border bg-muted">
+            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border bg-muted">
               {coverImage ? (
                 // eslint-disable-next-line @next/next/no-img-element -- imagem remota do catálogo Kairóss
-                <img src={coverImage} alt={product.name} className="h-full w-full object-cover" />
+                <img src={coverImage} alt={product.name} className="h-full w-full object-contain" />
               ) : (
                 <div className="flex h-full items-center justify-center text-muted-foreground/40">
                   <ImageOff className="size-8" strokeWidth={1.5} />
@@ -400,110 +404,133 @@ export function CatalogAffiliateSheet({
             </div>
           </div>
 
-          <Accordion type="multiple" defaultValue={["frete"]} className="rounded-2xl border px-4">
-            <AccordionItem value="frete">
-              <AccordionTrigger className="py-3.5 hover:no-underline">
-                <div className="flex items-center gap-2">
-                  <Truck className="size-3.5 text-muted-foreground" strokeWidth={2} />
-                  <div className="text-left">
-                    <p className="text-[13px] font-semibold">Frete</p>
-                    <p className="text-[11px] font-normal text-muted-foreground">
-                      {vendedorAssumeFrete ? "Você assume o custo" : "Cliente paga no checkout"}
-                    </p>
+          <div className="rounded-2xl border">
+            <button
+              type="button"
+              onClick={() => setFreteOpen((current) => !current)}
+              className="flex w-full items-center gap-2 px-4 py-3.5 text-left"
+            >
+              <Truck className="size-3.5 text-muted-foreground" strokeWidth={2} />
+              <div className="flex-1">
+                <p className="text-[13px] font-semibold">Frete</p>
+                <p className="text-[11px] font-normal text-muted-foreground">
+                  {vendedorAssumeFrete ? "Você assume o custo" : "Cliente paga no checkout"}
+                </p>
+              </div>
+              <ChevronDown
+                className={cn("size-4 shrink-0 text-muted-foreground transition-transform duration-200", freteOpen && "rotate-180")}
+                strokeWidth={2}
+              />
+            </button>
+            <div className="grid transition-[grid-template-rows] duration-300 ease-out" style={{ gridTemplateRows: freteOpen ? "1fr" : "0fr" }}>
+              <div className="overflow-hidden">
+                <div className="flex flex-col gap-2 border-t px-4 pt-3 pb-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setVendedorAssumeFrete(false)}
+                      className={cn(
+                        "rounded-lg border px-3 py-2.5 text-left text-[12px] transition-all duration-200",
+                        !vendedorAssumeFrete ? "border-primary bg-primary/[0.08]" : "text-muted-foreground hover:bg-accent",
+                      )}
+                    >
+                      <p className="font-semibold text-foreground">Cliente paga</p>
+                      <p className="mt-0.5 text-[10.5px] opacity-80">Calculado no checkout</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setVendedorAssumeFrete(true)}
+                      className={cn(
+                        "rounded-lg border px-3 py-2.5 text-left text-[12px] transition-all duration-200",
+                        vendedorAssumeFrete ? "border-primary bg-primary/[0.08]" : "text-muted-foreground hover:bg-accent",
+                      )}
+                    >
+                      <p className="font-semibold text-foreground">Você assume</p>
+                      <p className="mt-0.5 text-[10.5px] opacity-80">+conversão, -margem</p>
+                    </button>
                   </div>
+                  {vendedorAssumeFrete && (
+                    <label className="animate-in fade-in mt-1 flex items-center justify-between gap-3 text-[12px]">
+                      <span className="text-muted-foreground">Custo estimado do frete</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.5}
+                        value={custoFrete || ""}
+                        onChange={(event) => setCustoFrete(Number(event.target.value) || 0)}
+                        placeholder="0,00"
+                        className="w-24 rounded-md border bg-background px-2 py-1 text-right font-mono focus:border-primary focus:outline-none"
+                      />
+                    </label>
+                  )}
                 </div>
-              </AccordionTrigger>
-              <AccordionContent className="flex flex-col gap-2 pb-4">
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setVendedorAssumeFrete(false)}
-                    className={cn(
-                      "rounded-lg border px-3 py-2.5 text-left text-[12px] transition-all duration-200",
-                      !vendedorAssumeFrete ? "border-primary bg-primary/[0.08]" : "text-muted-foreground hover:bg-accent",
-                    )}
-                  >
-                    <p className="font-semibold text-foreground">Cliente paga</p>
-                    <p className="mt-0.5 text-[10.5px] opacity-80">Calculado no checkout</p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setVendedorAssumeFrete(true)}
-                    className={cn(
-                      "rounded-lg border px-3 py-2.5 text-left text-[12px] transition-all duration-200",
-                      vendedorAssumeFrete ? "border-primary bg-primary/[0.08]" : "text-muted-foreground hover:bg-accent",
-                    )}
-                  >
-                    <p className="font-semibold text-foreground">Você assume</p>
-                    <p className="mt-0.5 text-[10.5px] opacity-80">+conversão, -margem</p>
-                  </button>
-                </div>
-                {vendedorAssumeFrete && (
-                  <label className="animate-in fade-in mt-1 flex items-center justify-between gap-3 text-[12px]">
-                    <span className="text-muted-foreground">Custo estimado do frete</span>
-                    <input
-                      type="number"
-                      min={0}
-                      step={0.5}
-                      value={custoFrete || ""}
-                      onChange={(event) => setCustoFrete(Number(event.target.value) || 0)}
-                      placeholder="0,00"
-                      className="w-24 rounded-md border bg-background px-2 py-1 text-right font-mono focus:border-primary focus:outline-none"
-                    />
-                  </label>
-                )}
-              </AccordionContent>
-            </AccordionItem>
+              </div>
+            </div>
+          </div>
 
-            <AccordionItem value="keywords">
-              <AccordionTrigger className="py-3.5 hover:no-underline">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="size-3.5 text-muted-foreground" strokeWidth={2} />
-                  <div className="text-left">
-                    <p className="text-[13px] font-semibold">Palavras-chave para o bot</p>
-                    <p className="text-[11px] font-normal text-muted-foreground">
-                      {tags.length > 0 ? `${tags.length} palavra${tags.length > 1 ? "s" : ""} definida${tags.length > 1 ? "s" : ""}` : "Ajuda o bot de WhatsApp a reconhecer o produto"}
-                    </p>
-                  </div>
+          <div className="rounded-2xl border">
+            <button
+              type="button"
+              onClick={() => setKeywordsOpen((current) => !current)}
+              className="flex w-full items-center gap-2 px-4 py-3.5 text-left"
+            >
+              <Sparkles className="size-3.5 text-muted-foreground" strokeWidth={2} />
+              <div className="flex-1">
+                <p className="text-[13px] font-semibold">Palavras-chave para o bot</p>
+                <p className="text-[11px] font-normal text-muted-foreground">
+                  {tags.length > 0
+                    ? `${tags.length} palavra${tags.length > 1 ? "s" : ""} definida${tags.length > 1 ? "s" : ""}`
+                    : "Ajuda o bot de WhatsApp a reconhecer o produto"}
+                </p>
+              </div>
+              <ChevronDown
+                className={cn("size-4 shrink-0 text-muted-foreground transition-transform duration-200", keywordsOpen && "rotate-180")}
+                strokeWidth={2}
+              />
+            </button>
+            <div
+              className="grid transition-[grid-template-rows] duration-300 ease-out"
+              style={{ gridTemplateRows: keywordsOpen ? "1fr" : "0fr" }}
+            >
+              <div className="overflow-hidden">
+                <div className="flex flex-col gap-2 border-t px-4 pt-3 pb-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGerarPalavrasChave}
+                    disabled={keywordsAction.isLoading}
+                    className="w-fit"
+                  >
+                    <Sparkles data-icon="inline-start" className="size-3.5" strokeWidth={2} />
+                    {keywordsAction.isLoading ? "Gerando..." : "Gerar com IA"}
+                  </Button>
+                  {tags.length > 0 && (
+                    <div className="animate-in fade-in flex flex-wrap gap-1.5">
+                      {tags.map((tag) => (
+                        <Badge key={tag} variant="secondary" className="gap-1 pr-1.5 text-[10.5px]">
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => setTags((current) => current.filter((item) => item !== tag))}
+                            aria-label={`Remover ${tag}`}
+                            className="text-muted-foreground/70 transition-colors hover:text-destructive"
+                          >
+                            <XIcon className="size-2.5" strokeWidth={2.5} />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  {keywordsAction.error && (
+                    <Alert variant="destructive" className="mt-1">
+                      <AlertDescription>{keywordsAction.error}</AlertDescription>
+                    </Alert>
+                  )}
                 </div>
-              </AccordionTrigger>
-              <AccordionContent className="flex flex-col gap-2 pb-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleGerarPalavrasChave}
-                  disabled={keywordsAction.isLoading}
-                  className="w-fit"
-                >
-                  <Sparkles data-icon="inline-start" className="size-3.5" strokeWidth={2} />
-                  {keywordsAction.isLoading ? "Gerando..." : "Gerar com IA"}
-                </Button>
-                {tags.length > 0 && (
-                  <div className="animate-in fade-in flex flex-wrap gap-1.5">
-                    {tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="gap-1 pr-1.5 text-[10.5px]">
-                        {tag}
-                        <button
-                          type="button"
-                          onClick={() => setTags((current) => current.filter((item) => item !== tag))}
-                          aria-label={`Remover ${tag}`}
-                          className="text-muted-foreground/70 transition-colors hover:text-destructive"
-                        >
-                          <XIcon className="size-2.5" strokeWidth={2.5} />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-                {keywordsAction.error && (
-                  <Alert variant="destructive" className="mt-1">
-                    <AlertDescription>{keywordsAction.error}</AlertDescription>
-                  </Alert>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+              </div>
+            </div>
+          </div>
 
           {afiliarState.error && !afiliarState.alreadyAffiliatedProductId && (
             <Alert variant="destructive">
