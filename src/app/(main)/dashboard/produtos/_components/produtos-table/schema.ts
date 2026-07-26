@@ -20,6 +20,7 @@ const productSchema = z.object({
   tags: z.array(z.string()).optional(),
   salesCount: z.number().optional(),
   salesHistory: z.array(z.number()).optional(),
+  link: z.string().optional(),
 });
 
 export const productsSchema = z.array(productSchema);

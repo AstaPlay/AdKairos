@@ -18,7 +18,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 
-import type { ProductRow } from "./produtos-table/schema";
+import type { ProductRow, ProductStatus } from "./produtos-table/schema";
 
 function currency(value: number) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -32,21 +32,45 @@ function marginTone(marginPct: number): { label: string; className: string } {
 
 export function ProductDetailSheet({
   product,
+  pending,
   onClose,
+  onSave,
+  onRemove,
 }: {
   product: ProductRow | null;
+  pending?: boolean;
   onClose: () => void;
+  onSave: (updates: { status: ProductStatus; price: number }) => Promise<void>;
+  onRemove: () => Promise<void>;
 }) {
   const isOpen = product !== null;
   const [salePrice, setSalePrice] = React.useState(product?.price ?? 0);
   const [isActive, setIsActive] = React.useState(product?.status === "active");
+  const [isDirty, setIsDirty] = React.useState(false);
 
   React.useEffect(() => {
     if (product) {
       setSalePrice(product.price);
       setIsActive(product.status === "active");
+      setIsDirty(false);
     }
   }, [product]);
+
+  function handlePriceChange(value: number) {
+    setSalePrice(value);
+    setIsDirty(true);
+  }
+
+  function handleActiveChange(value: boolean) {
+    setIsActive(value);
+    setIsDirty(true);
+  }
+
+  async function handleSave() {
+    if (!product) return;
+    await onSave({ status: isActive ? "active" : (product.status === "out_of_stock" ? "out_of_stock" : "paused"), price: salePrice });
+    setIsDirty(false);
+  }
 
   const cost = product?.cost ?? 0;
   const margin = product ? salePrice - cost : 0;
@@ -74,7 +98,7 @@ export function ProductDetailSheet({
                   <p className="text-sm font-medium">Produto ativo</p>
                   <p className="text-muted-foreground text-xs">Visível para venda no WhatsApp AI e CRM</p>
                 </div>
-                <Switch checked={isActive} onCheckedChange={setIsActive} />
+                <Switch checked={isActive} onCheckedChange={handleActiveChange} />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -111,7 +135,7 @@ export function ProductDetailSheet({
                     min={minPrice}
                     max={maxPrice}
                     step={0.5}
-                    onValueChange={([value]) => setSalePrice(value)}
+                    onValueChange={([value]) => handlePriceChange(value)}
                   />
                 </div>
               )}
@@ -159,10 +183,16 @@ export function ProductDetailSheet({
             </div>
 
             <SheetFooter className="flex-row gap-2">
-              <Button variant="outline" className="flex-1">
-                Salvar alterações
+              <Button variant="outline" className="flex-1" disabled={!isDirty || pending} onClick={handleSave}>
+                {pending ? "Salvando..." : "Salvar alterações"}
               </Button>
-              <Button variant="ghost" size="icon" aria-label="Remover produto">
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Remover produto"
+                disabled={pending}
+                onClick={onRemove}
+              >
                 <Trash2 className="size-4 text-destructive" />
               </Button>
             </SheetFooter>

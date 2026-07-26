@@ -7,10 +7,7 @@ import { Area, AreaChart, ResponsiveContainer } from "recharts";
 
 import { Card, CardAction, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 
-import productsData from "./produtos-table/data.json";
-import { productsSchema } from "./produtos-table/schema";
-
-const products = productsSchema.parse(productsData);
+import type { ProductRow } from "./produtos-table/schema";
 
 function Sparkline({ data, color }: { data: number[]; color: string }) {
   if (data.length < 2) return null;
@@ -39,19 +36,19 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
   );
 }
 
-export function KpiCards() {
+export function KpiCards({ products }: { products: ProductRow[] }) {
   const total = products.length;
   const active = products.filter((product) => product.status === "active").length;
   const outOfStock = products.filter((product) => product.status === "out_of_stock" || product.stock === 0).length;
   const fromKaiross = products.filter((product) => product.source === "kaiross").length;
 
-  const totalHistory = React.useMemo(() => aggregateHistory(products, () => true), []);
-  const activeHistory = React.useMemo(() => aggregateHistory(products, (p) => p.status === "active"), []);
+  const totalHistory = React.useMemo(() => aggregateHistory(products, () => true), [products]);
+  const activeHistory = React.useMemo(() => aggregateHistory(products, (p) => p.status === "active"), [products]);
   const outOfStockHistory = React.useMemo(
     () => aggregateHistory(products, (p) => p.status === "out_of_stock" || p.stock === 0),
-    [],
+    [products],
   );
-  const kaiRossHistory = React.useMemo(() => aggregateHistory(products, (p) => p.source === "kaiross"), []);
+  const kaiRossHistory = React.useMemo(() => aggregateHistory(products, (p) => p.source === "kaiross"), [products]);
 
   return (
     <section className="space-y-5">
@@ -119,7 +116,7 @@ export function KpiCards() {
   );
 }
 
-function aggregateHistory(items: typeof products, predicate: (item: (typeof products)[number]) => boolean) {
+function aggregateHistory(items: ProductRow[], predicate: (item: ProductRow) => boolean) {
   const relevant = items.filter(predicate);
   const length = 6;
   const totals = Array.from({ length }, () => 0);

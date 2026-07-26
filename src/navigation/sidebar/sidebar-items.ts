@@ -9,6 +9,7 @@ import {
   GraduationCap,
   Kanban,
   LayoutDashboard,
+  ListOrdered,
   ListTodo,
   Lock,
   type LucideIcon,
@@ -138,6 +139,12 @@ export const sidebarItems: NavGroup[] = [
         title: "Catálogo",
         url: "/dashboard/catalogo",
         icon: Sparkles,
+      },
+      {
+        id: "pedidos",
+        title: "Pedidos",
+        url: "/dashboard/pedidos",
+        icon: ListOrdered,
       },
       {
         id: "email",

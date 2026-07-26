@@ -39,6 +39,7 @@ export function ProductCard({
   product,
   selected,
   highlighted,
+  pending,
   onToggleSelect,
   onOpenDetail,
   onCopyCheckout,
@@ -48,6 +49,7 @@ export function ProductCard({
   product: ProductRow;
   selected: boolean;
   highlighted?: boolean;
+  pending?: boolean;
   onToggleSelect: (checked: boolean) => void;
   onOpenDetail: () => void;
   onCopyCheckout?: () => void;
@@ -60,6 +62,7 @@ export function ProductCard({
         "gap-3 py-0 transition-colors",
         "cursor-pointer hover:ring-primary/40",
         highlighted && "ring-2 ring-primary/50",
+        pending && "pointer-events-none opacity-60",
       )}
       role="button"
       tabIndex={0}

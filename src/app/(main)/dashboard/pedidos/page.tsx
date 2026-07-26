@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 
-import { ProdutosClient } from "./_components/produtos-client";
+import { PedidosClient } from "./_components/pedidos-client";
 
 export const metadata: Metadata = {
-  title: "Produtos",
+  title: "Pedidos",
 };
 
 export default function Page() {
-  return <ProdutosClient />;
+  return <PedidosClient />;
 }

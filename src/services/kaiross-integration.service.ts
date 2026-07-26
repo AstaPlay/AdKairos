@@ -227,6 +227,126 @@ export async function fetchMeusSellerProdutos(session: KairoossSession): Promise
   return raw as KairoossSellerProduto[];
 }
 
+/**
+ * Resposta de `GET /vendas/relatorio` — CONFIRMADO EM PRODUÇÃO (capturado via
+ * DevTools Network em 2026-07-26, sessão real). São contadores históricos
+ * agregados (todo o período, sem filtro de data — a chamada capturada não
+ * enviou nenhum query param) e não incluem valores em R$ nem detalhamento
+ * por pedido/produto. Não confundir com a lista de pedidos da tela
+ * "Pedidos" da Kairóss — essa é outra chamada, ainda não capturada.
+ */
+export interface KairoossVendasResumo {
+  vendedorId: string;
+  pagos: number;
+  pendentes: number;
+  falhas: number;
+  reembolsados: number;
+  abandonados: number;
+}
+
+/**
+ * Busca o resumo agregado de vendas (contadores). Nunca lança: se a chamada
+ * falhar ou o formato vier diferente do confirmado, devolve null — o
+ * chamador trata isso como "não consegui confirmar agora", nunca como
+ * "zero vendas".
+ */
+export async function fetchVendasResumo(session: KairoossSession): Promise<KairoossVendasResumo | null> {
+  const response = await kairoossRequest("/vendas/relatorio", session, { method: "GET" });
+  if (!response.ok) return null;
+
+  const raw: unknown = await response.json().catch(() => null);
+  if (!raw || typeof raw !== "object") return null;
+  const data = raw as Partial<KairoossVendasResumo>;
+  if (typeof data.vendedorId !== "string") return null;
+
+  return {
+    vendedorId: data.vendedorId,
+    pagos: Number(data.pagos) || 0,
+    pendentes: Number(data.pendentes) || 0,
+    falhas: Number(data.falhas) || 0,
+    reembolsados: Number(data.reembolsados) || 0,
+    abandonados: Number(data.abandonados) || 0,
+  };
+}
+
+/**
+ * Item bruto de `GET /vendas/pedidos` — CONFIRMADO EM PRODUÇÃO (capturado via
+ * DevTools Network em 2026-07-26, sessão real, 1 pedido de exemplo real).
+ * A chamada capturada foi um GET simples sem query params — parece devolver
+ * o histórico completo do vendedor de uma vez (sem paginação/filtro no
+ * servidor); os filtros de período/status que aparecem na tela de Pedidos da
+ * Kairóss são, então, aplicados no client deles sobre esse mesmo payload.
+ *
+ * IMPORTANTE: `statusPagamento` só foi observado com o valor `"PENDENTE"` no
+ * payload de exemplo. Não sabemos os outros valores possíveis (ex.: o valor
+ * usado para "pago") — por isso nunca comparamos contra um valor adivinhado
+ * como "PAGO". Qualquer lógica que dependa de "pedido pago" deve tratar
+ * "diferente de PENDENTE" como "não confirmado", não como sinônimo de pago.
+ */
+export interface KairoossPedidoRaw {
+  id: string;
+  vendedorId: string;
+  fornecedorId?: string;
+  clienteId?: string;
+  clienteNome: string;
+  quantidadeTotal: number;
+  valorBruto: number;
+  valorLiquidoVendedor: number;
+  valorImposto?: number;
+  valorTaxa?: number;
+  valorFrete?: number;
+  vendedorAssumeFrete?: boolean;
+  custoFornecedorTotal?: number;
+  statusPagamento: string;
+  formaPagamento?: string;
+  itens: Array<{
+    id: string;
+    produtoId?: string;
+    produtoNome: string;
+    produtoCodigo?: string;
+    imagemPrincipalUrl?: string | null;
+    quantidade: number;
+    valorUnitario: number;
+    valorTotal: number;
+  }>;
+  numeroPedido: string;
+  fornecedor?: string;
+  codigoRastreio?: string | null;
+  statusFornecedor?: string | null;
+  integrado?: boolean;
+  dataCriacao: string;
+  dataPagamento?: string | null;
+  dataEnvio?: string | null;
+  clienteContato?: {
+    email?: string;
+    telefone?: string;
+    documento?: string;
+    cep?: string;
+    endereco?: string;
+    numero?: string;
+    bairro?: string;
+    complemento?: string;
+    cidade?: string;
+    uf?: string;
+  };
+}
+
+/**
+ * Busca a lista real de pedidos do vendedor. Nunca lança: se a chamada
+ * falhar ou o formato vier diferente do array confirmado, devolve null — o
+ * chamador trata isso como "não consegui confirmar agora", nunca como
+ * "sem pedidos".
+ */
+export async function fetchPedidosKaiross(session: KairoossSession): Promise<KairoossPedidoRaw[] | null> {
+  const response = await kairoossRequest("/vendas/pedidos", session, { method: "GET" });
+  if (!response.ok) return null;
+
+  const raw: unknown = await response.json().catch(() => null);
+  if (!Array.isArray(raw)) return null;
+
+  return raw as KairoossPedidoRaw[];
+}
+
 export interface OrderTrackingResult {
   /** Status em texto livre, como a origem devolver — não normalizamos porque não sabemos o vocabulário real ainda. */
   status: string;

@@ -29,8 +29,7 @@ import { cn } from "@/lib/utils";
 
 import { ProductCard } from "./product-card";
 import { ProductDetailSheet } from "./product-detail-sheet";
-import productsData from "./produtos-table/data.json";
-import { productsSchema, type ProductRow } from "./produtos-table/schema";
+import type { ProductRow, ProductStatus } from "./produtos-table/schema";
 
 const statFilterOptions = ["all", "active", "paused", "out_of_stock"] as const;
 const statFilterLabel: Record<(typeof statFilterOptions)[number], string> = {
@@ -47,15 +46,26 @@ const sourceLabel: Record<(typeof sourceOptions)[number], string> = {
   manual: "Manual",
 };
 
-const initialProducts = productsSchema.parse(productsData);
 const PAGE_SIZE = 8;
 
 function checkoutUrlFor(product: ProductRow) {
-  return `https://pay.kaiross.com.br/${product.id}`;
+  // `link` só existe pra produtos vindos da Kairóss (gravado na afiliação);
+  // o fallback nunca deveria ser exercido na prática para esses produtos,
+  // mas evita copiar "undefined" se algum registro antigo não tiver o link.
+  return product.link ?? `https://pay.kaiross.com.br/${product.id}`;
 }
 
-export function ProductsSection() {
-  const [products, setProducts] = React.useState<ProductRow[]>(initialProducts);
+export function ProductsSection({
+  products,
+  pendingIds,
+  onUpdate,
+  onRemove,
+}: {
+  products: ProductRow[];
+  pendingIds: Set<string>;
+  onUpdate: (id: string, updates: { status?: ProductStatus; price?: number }) => Promise<boolean>;
+  onRemove: (id: string) => Promise<boolean>;
+}) {
   const [search, setSearch] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState<(typeof statFilterOptions)[number]>("all");
   const [sourceFilter, setSourceFilter] = React.useState<(typeof sourceOptions)[number]>("all");
@@ -116,20 +126,22 @@ export function ProductsSection() {
       .catch(() => toast.error("Não foi possível copiar o link"));
   }
 
-  function handleTogglePause(product: ProductRow) {
+  async function handleTogglePause(product: ProductRow) {
     const nextStatus = product.status === "paused" ? "active" : "paused";
-    setProducts((previous) => previous.map((item) => (item.id === product.id ? { ...item, status: nextStatus } : item)));
-    toast.success(nextStatus === "paused" ? "Vendas pausadas" : "Vendas reativadas");
+    const ok = await onUpdate(product.id, { status: nextStatus });
+    if (ok) toast.success(nextStatus === "paused" ? "Vendas pausadas" : "Vendas reativadas");
   }
 
-  function handleRemove(product: ProductRow) {
-    setProducts((previous) => previous.filter((item) => item.id !== product.id));
-    setSelectedIds((previous) => {
-      const next = new Set(previous);
-      next.delete(product.id);
-      return next;
-    });
-    toast.success("Produto removido da vitrine");
+  async function handleRemove(product: ProductRow) {
+    const ok = await onRemove(product.id);
+    if (ok) {
+      setSelectedIds((previous) => {
+        const next = new Set(previous);
+        next.delete(product.id);
+        return next;
+      });
+      if (detailProduct?.id === product.id) setDetailProduct(null);
+    }
   }
 
   function preventNav(event: React.MouseEvent<HTMLAnchorElement>) {
@@ -227,6 +239,7 @@ export function ProductsSection() {
                   key={product.id}
                   product={product}
                   selected={selectedIds.has(product.id)}
+                  pending={pendingIds.has(product.id)}
                   onToggleSelect={(checked) => toggleSelect(product.id, checked)}
                   onOpenDetail={() => setDetailProduct(product)}
                   onCopyCheckout={product.source === "kaiross" ? () => handleCopyCheckout(product) : undefined}
@@ -299,7 +312,20 @@ export function ProductsSection() {
         </CardContent>
       </Card>
 
-      <ProductDetailSheet product={detailProduct} onClose={() => setDetailProduct(null)} />
+      <ProductDetailSheet
+        product={detailProduct}
+        pending={detailProduct ? pendingIds.has(detailProduct.id) : false}
+        onClose={() => setDetailProduct(null)}
+        onSave={async (updates) => {
+          if (!detailProduct) return;
+          const ok = await onUpdate(detailProduct.id, updates);
+          if (ok) toast.success("Alterações salvas");
+        }}
+        onRemove={async () => {
+          if (!detailProduct) return;
+          await handleRemove(detailProduct);
+        }}
+      />
     </section>
   );
 }
