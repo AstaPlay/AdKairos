@@ -23,12 +23,10 @@ const STATUS_LABEL: Record<ProductStatus, string> = {
 };
 
 const STATUS_BADGE_CLASS: Record<ProductStatus, string> = {
-  draft: "border-border bg-muted text-muted-foreground",
-  active:
-    "border-green-200 bg-green-500/10 text-green-700 dark:border-green-900/40 dark:bg-green-500/15 dark:text-green-300",
-  paused:
-    "border-amber-200 bg-amber-500/10 text-amber-700 dark:border-amber-900/40 dark:bg-amber-500/15 dark:text-amber-300",
-  out_of_stock: "border-destructive/20 bg-destructive/10 text-destructive",
+  draft: "border-transparent bg-zinc-600 text-white dark:bg-zinc-500",
+  active: "border-transparent bg-emerald-600 text-white dark:bg-emerald-500",
+  paused: "border-transparent bg-amber-500 text-white",
+  out_of_stock: "border-transparent bg-red-600 text-white",
 };
 
 function currency(value: number) {
@@ -84,14 +82,20 @@ export function ProductCard({
           </div>
         )}
 
-        <div className="absolute left-2 top-2 flex flex-col items-start gap-1">
-          <Badge variant="outline" className={cn("text-[10px]", STATUS_BADGE_CLASS[product.status])}>
+        <div className="absolute left-2 top-2 z-10 flex flex-col items-start gap-1">
+          <Badge
+            variant="outline"
+            className={cn(
+              "text-[10px] font-semibold shadow-sm ring-1 ring-black/10",
+              STATUS_BADGE_CLASS[product.status],
+            )}
+          >
             {STATUS_LABEL[product.status]}
           </Badge>
         </div>
 
         {product.source === "kaiross" && (
-          <div className="absolute right-2 top-2">
+          <div className="absolute right-2 top-2 z-10">
             <Badge
               variant="outline"
               className="gap-1 border-white/20 bg-black/55 text-[10px] text-white backdrop-blur-md"

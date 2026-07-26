@@ -11,6 +11,7 @@ const VALID_STATUSES: ProductStatus[] = ["draft", "active", "paused", "out_of_st
 interface UpdateBody {
   status?: ProductStatus;
   price?: number;
+  tags?: string[];
 }
 
 async function loadOwnedProduct(id: string, ownerId: string) {
@@ -67,6 +68,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       );
     }
     updates.price = body.price;
+  }
+  if (body.tags !== undefined) {
+    if (!Array.isArray(body.tags) || !body.tags.every((tag) => typeof tag === "string")) {
+      return NextResponse.json(
+        { success: false, error: { code: "invalid_tags", message: "Palavras-chave inválidas." } },
+        { status: 400 },
+      );
+    }
+    updates.tags = body.tags.map((tag) => tag.trim()).filter(Boolean);
   }
   if (Object.keys(updates).length === 0) {
     return NextResponse.json(

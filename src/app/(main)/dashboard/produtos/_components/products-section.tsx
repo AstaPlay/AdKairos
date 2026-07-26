@@ -63,7 +63,7 @@ export function ProductsSection({
 }: {
   products: ProductRow[];
   pendingIds: Set<string>;
-  onUpdate: (id: string, updates: { status?: ProductStatus; price?: number }) => Promise<boolean>;
+  onUpdate: (id: string, updates: { status?: ProductStatus; price?: number; tags?: string[] }) => Promise<boolean>;
   onRemove: (id: string) => Promise<boolean>;
 }) {
   const [search, setSearch] = React.useState("");
@@ -72,6 +72,17 @@ export function ProductsSection({
   const [pageIndex, setPageIndex] = React.useState(0);
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
   const [detailProduct, setDetailProduct] = React.useState<ProductRow | null>(null);
+
+  // Mantém o sheet sincronizado com a versão mais recente do produto: como
+  // `products` é a fonte da verdade (dono do estado em ProdutosClient), sem
+  // isso o sheet ficaria mostrando tags/preço desatualizados depois de um
+  // onUpdate (ex.: "Gerar com IA" salva as tags, mas o objeto local do sheet
+  // ainda seria o antigo até o usuário fechar e reabrir).
+  React.useEffect(() => {
+    if (!detailProduct) return;
+    const fresh = products.find((item) => item.id === detailProduct.id);
+    if (fresh && fresh !== detailProduct) setDetailProduct(fresh);
+  }, [products, detailProduct]);
 
   const statusCounts = React.useMemo(() => {
     return {
@@ -320,6 +331,13 @@ export function ProductsSection({
           if (!detailProduct) return;
           const ok = await onUpdate(detailProduct.id, updates);
           if (ok) toast.success("Alterações salvas");
+          return ok;
+        }}
+        onGenerateTags={async (tags) => {
+          if (!detailProduct) return false;
+          const ok = await onUpdate(detailProduct.id, { tags });
+          if (ok) toast.success("Palavras-chave geradas e salvas");
+          return ok;
         }}
         onRemove={async () => {
           if (!detailProduct) return;

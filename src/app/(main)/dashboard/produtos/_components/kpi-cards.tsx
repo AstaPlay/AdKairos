@@ -10,7 +10,16 @@ import { Card, CardAction, CardContent, CardDescription, CardHeader } from "@/co
 import type { ProductRow } from "./produtos-table/schema";
 
 function Sparkline({ data, color }: { data: number[]; color: string }) {
-  if (data.length < 2) return null;
+  const hasEnoughData = data.length >= 2 && data.some((value) => value > 0);
+
+  if (!hasEnoughData) {
+    return (
+      <div className="flex h-10 w-20 items-end" aria-hidden="true">
+        <div className="h-px w-full border-t border-dashed border-muted-foreground/25" />
+      </div>
+    );
+  }
+
   const points = data.map((value, index) => ({ index, value }));
 
   return (
@@ -67,7 +76,7 @@ export function KpiCards({ products }: { products: ProductRow[] }) {
               <Package className="size-4 text-muted-foreground" />
             </CardAction>
           </CardHeader>
-          <CardContent className="flex items-end justify-between">
+          <CardContent className="flex min-h-10 items-end justify-between">
             <span className="text-3xl leading-none tracking-tight">{total}</span>
             <Sparkline data={totalHistory} color="#6366f1" />
           </CardContent>
@@ -80,7 +89,7 @@ export function KpiCards({ products }: { products: ProductRow[] }) {
               <ShoppingBasket className="size-4 text-muted-foreground" />
             </CardAction>
           </CardHeader>
-          <CardContent className="flex items-end justify-between">
+          <CardContent className="flex min-h-10 items-end justify-between">
             <span className="text-3xl leading-none tracking-tight">{active}</span>
             <Sparkline data={activeHistory} color="#22c55e" />
           </CardContent>
@@ -93,7 +102,7 @@ export function KpiCards({ products }: { products: ProductRow[] }) {
               <PackageX className="size-4 text-muted-foreground" />
             </CardAction>
           </CardHeader>
-          <CardContent className="flex items-end justify-between">
+          <CardContent className="flex min-h-10 items-end justify-between">
             <span className="text-3xl leading-none tracking-tight">{outOfStock}</span>
             <Sparkline data={outOfStockHistory} color="#ef4444" />
           </CardContent>
@@ -106,7 +115,7 @@ export function KpiCards({ products }: { products: ProductRow[] }) {
               <Sparkles className="size-4 text-muted-foreground" />
             </CardAction>
           </CardHeader>
-          <CardContent className="flex items-end justify-between">
+          <CardContent className="flex min-h-10 items-end justify-between">
             <span className="text-3xl leading-none tracking-tight">{fromKaiross}</span>
             <Sparkline data={kaiRossHistory} color="#a855f7" />
           </CardContent>
