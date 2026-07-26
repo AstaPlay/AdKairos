@@ -1,9 +1,16 @@
 "use client";
 
-import { ImageOff, Sparkles } from "lucide-react";
+import { Copy, ImageOff, MoreVertical, PauseCircle, PlayCircle, Sparkles, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
 import type { ProductRow, ProductStatus } from "./produtos-table/schema";
@@ -34,12 +41,18 @@ export function ProductCard({
   highlighted,
   onToggleSelect,
   onOpenDetail,
+  onCopyCheckout,
+  onTogglePause,
+  onRemove,
 }: {
   product: ProductRow;
   selected: boolean;
   highlighted?: boolean;
   onToggleSelect: (checked: boolean) => void;
   onOpenDetail: () => void;
+  onCopyCheckout?: () => void;
+  onTogglePause?: () => void;
+  onRemove?: () => void;
 }) {
   return (
     <Card
@@ -95,6 +108,54 @@ export function ProductCard({
             className="size-4 cursor-pointer rounded border-white/40 bg-black/40 accent-primary"
           />
         </div>
+
+        {(onCopyCheckout || onTogglePause || onRemove) && (
+          <div className="absolute bottom-2 right-2" onClick={(event) => event.stopPropagation()}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Mais ações"
+                  className="flex size-6 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-md transition-colors hover:bg-black/65"
+                >
+                  <MoreVertical className="size-3.5" strokeWidth={2} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                {onCopyCheckout && (
+                  <DropdownMenuItem onSelect={onCopyCheckout}>
+                    <Copy data-icon="inline-start" className="size-3.5" />
+                    Copiar link de checkout
+                  </DropdownMenuItem>
+                )}
+                {onTogglePause && (
+                  <DropdownMenuItem onSelect={onTogglePause}>
+                    {product.status === "paused" ? (
+                      <>
+                        <PlayCircle data-icon="inline-start" className="size-3.5" />
+                        Ativar vendas
+                      </>
+                    ) : (
+                      <>
+                        <PauseCircle data-icon="inline-start" className="size-3.5" />
+                        Pausar vendas
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                )}
+                {onRemove && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem variant="destructive" onSelect={onRemove}>
+                      <Trash2 data-icon="inline-start" className="size-3.5" />
+                      Remover da vitrine
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </div>
 
       <CardContent className="flex flex-col gap-2 pb-4">

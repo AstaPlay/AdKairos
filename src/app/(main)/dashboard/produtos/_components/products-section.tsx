@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 
 import { ChevronDownIcon, ListFilter, Plus, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,20 +25,21 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { cn } from "@/lib/utils";
 
 import { ProductCard } from "./product-card";
 import { ProductDetailSheet } from "./product-detail-sheet";
 import productsData from "./produtos-table/data.json";
 import { productsSchema, type ProductRow } from "./produtos-table/schema";
 
-const statusOptions = ["all", "active", "draft", "paused", "out_of_stock"] as const;
-const statusLabel: Record<(typeof statusOptions)[number], string> = {
-  all: "Todos os status",
-  active: "Ativo",
-  draft: "Rascunho",
-  paused: "Pausado",
-  out_of_stock: "Sem estoque",
+const statFilterOptions = ["all", "active", "paused", "out_of_stock"] as const;
+const statFilterLabel: Record<(typeof statFilterOptions)[number], string> = {
+  all: "Todos",
+  active: "Ativos",
+  paused: "Pausados",
+  out_of_stock: "Estoque zerado",
 };
+
 const sourceOptions = ["all", "kaiross", "manual"] as const;
 const sourceLabel: Record<(typeof sourceOptions)[number], string> = {
   all: "Qualquer origem",
@@ -45,16 +47,30 @@ const sourceLabel: Record<(typeof sourceOptions)[number], string> = {
   manual: "Manual",
 };
 
-const products = productsSchema.parse(productsData);
+const initialProducts = productsSchema.parse(productsData);
 const PAGE_SIZE = 8;
 
+function checkoutUrlFor(product: ProductRow) {
+  return `https://pay.kaiross.com.br/${product.id}`;
+}
+
 export function ProductsSection() {
+  const [products, setProducts] = React.useState<ProductRow[]>(initialProducts);
   const [search, setSearch] = React.useState("");
-  const [statusFilter, setStatusFilter] = React.useState<(typeof statusOptions)[number]>("all");
+  const [statusFilter, setStatusFilter] = React.useState<(typeof statFilterOptions)[number]>("all");
   const [sourceFilter, setSourceFilter] = React.useState<(typeof sourceOptions)[number]>("all");
   const [pageIndex, setPageIndex] = React.useState(0);
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
   const [detailProduct, setDetailProduct] = React.useState<ProductRow | null>(null);
+
+  const statusCounts = React.useMemo(() => {
+    return {
+      all: products.length,
+      active: products.filter((product) => product.status === "active").length,
+      paused: products.filter((product) => product.status === "paused").length,
+      out_of_stock: products.filter((product) => product.status === "out_of_stock" || product.stock === 0).length,
+    } satisfies Record<(typeof statFilterOptions)[number], number>;
+  }, [products]);
 
   const filtered = React.useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -63,11 +79,15 @@ export function ProductsSection() {
         normalizedSearch.length === 0 ||
         product.name.toLowerCase().includes(normalizedSearch) ||
         product.category.toLowerCase().includes(normalizedSearch);
-      const matchesStatus = statusFilter === "all" || product.status === statusFilter;
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "out_of_stock"
+          ? product.status === "out_of_stock" || product.stock === 0
+          : product.status === statusFilter);
       const matchesSource = sourceFilter === "all" || product.source === sourceFilter;
       return matchesSearch && matchesStatus && matchesSource;
     });
-  }, [search, statusFilter, sourceFilter]);
+  }, [products, search, statusFilter, sourceFilter]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePageIndex = Math.min(pageIndex, pageCount - 1);
@@ -87,6 +107,29 @@ export function ProductsSection() {
       else next.delete(id);
       return next;
     });
+  }
+
+  function handleCopyCheckout(product: ProductRow) {
+    navigator.clipboard
+      .writeText(checkoutUrlFor(product))
+      .then(() => toast.success("Link de checkout copiado"))
+      .catch(() => toast.error("Não foi possível copiar o link"));
+  }
+
+  function handleTogglePause(product: ProductRow) {
+    const nextStatus = product.status === "paused" ? "active" : "paused";
+    setProducts((previous) => previous.map((item) => (item.id === product.id ? { ...item, status: nextStatus } : item)));
+    toast.success(nextStatus === "paused" ? "Vendas pausadas" : "Vendas reativadas");
+  }
+
+  function handleRemove(product: ProductRow) {
+    setProducts((previous) => previous.filter((item) => item.id !== product.id));
+    setSelectedIds((previous) => {
+      const next = new Set(previous);
+      next.delete(product.id);
+      return next;
+    });
+    toast.success("Produto removido da vitrine");
   }
 
   function preventNav(event: React.MouseEvent<HTMLAnchorElement>) {
@@ -110,30 +153,6 @@ export function ProductsSection() {
                   setPageIndex(0);
                 }}
               />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <ListFilter data-icon="inline-start" />
-                    Status
-                    <ChevronDownIcon data-icon="inline-end" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuRadioGroup
-                    value={statusFilter}
-                    onValueChange={(value) => {
-                      setStatusFilter(value as (typeof statusOptions)[number]);
-                      setPageIndex(0);
-                    }}
-                  >
-                    {statusOptions.map((option) => (
-                      <DropdownMenuRadioItem key={option} value={option}>
-                        {statusLabel[option]}
-                      </DropdownMenuRadioItem>
-                    ))}
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -172,6 +191,35 @@ export function ProductsSection() {
           </CardAction>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          <div className="flex flex-wrap gap-2">
+            {statFilterOptions.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => {
+                  setStatusFilter(option);
+                  setPageIndex(0);
+                }}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                  statusFilter === option
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-transparent text-muted-foreground hover:bg-accent hover:text-foreground",
+                )}
+              >
+                {statFilterLabel[option]}
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 font-mono text-[10px] tabular-nums",
+                    statusFilter === option ? "bg-primary-foreground/20" : "bg-muted",
+                  )}
+                >
+                  {statusCounts[option]}
+                </span>
+              </button>
+            ))}
+          </div>
+
           {pageItems.length ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
               {pageItems.map((product) => (
@@ -181,6 +229,9 @@ export function ProductsSection() {
                   selected={selectedIds.has(product.id)}
                   onToggleSelect={(checked) => toggleSelect(product.id, checked)}
                   onOpenDetail={() => setDetailProduct(product)}
+                  onCopyCheckout={product.source === "kaiross" ? () => handleCopyCheckout(product) : undefined}
+                  onTogglePause={() => handleTogglePause(product)}
+                  onRemove={() => handleRemove(product)}
                 />
               ))}
             </div>
