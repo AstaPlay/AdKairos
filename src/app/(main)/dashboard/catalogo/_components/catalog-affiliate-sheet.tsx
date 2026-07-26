@@ -257,7 +257,7 @@ export function CatalogAffiliateSheet({
       <SheetContent
         side={isMobile ? "bottom" : "right"}
         onOpenAutoFocus={(event) => event.preventDefault()}
-        style={isMobile ? { height: "92vh", maxHeight: "92vh" } : undefined}
+        style={isMobile ? { height: "92svh", maxHeight: "92svh" } : undefined}
         className={cn(
           "flex flex-col gap-0 overflow-hidden p-0 sm:max-w-lg",
           isMobile && "rounded-t-3xl border-t",

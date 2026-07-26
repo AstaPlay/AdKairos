@@ -142,7 +142,7 @@ export function CatalogCategorySheet({ open, tipo, selected, onSelect, onClose }
       <SheetContent
         side={isMobile ? "bottom" : "right"}
         onOpenAutoFocus={(event) => event.preventDefault()}
-        style={isMobile ? { height: "85vh", maxHeight: "85vh" } : undefined}
+        style={isMobile ? { height: "85svh", maxHeight: "85svh" } : undefined}
         className={cn("flex flex-col gap-0 overflow-hidden p-0 sm:max-w-sm", isMobile && "rounded-t-3xl border-t")}
       >
         {isMobile && (
