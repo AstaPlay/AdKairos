@@ -19,6 +19,12 @@ export interface CategoryNode {
   name: string;
   fullPath: string;
   children: CategoryNode[];
+  /** Produtos cujo `category` bate exatamente com este path — dado real,
+   * contado a partir da mesma lista usada para montar a árvore. Não soma os
+   * filhos automaticamente: cada nó mostra só o que está diretamente nele,
+   * evitando dar a entender que existe um produto que na verdade está numa
+   * subcategoria mais específica. */
+  productCount: number;
 }
 
 function insertCategoryPath(nodes: CategoryNode[], segments: string[], accumulatedPath: string): void {
@@ -28,7 +34,7 @@ function insertCategoryPath(nodes: CategoryNode[], segments: string[], accumulat
   const fullPath = accumulatedPath ? `${accumulatedPath} > ${head}` : head;
   let node = nodes.find((candidate) => candidate.name === head);
   if (!node) {
-    node = { name: head, fullPath, children: [] };
+    node = { name: head, fullPath, children: [], productCount: 0 };
     nodes.push(node);
   }
   if (rest.length > 0) insertCategoryPath(node.children, rest, fullPath);
@@ -36,18 +42,24 @@ function insertCategoryPath(nodes: CategoryNode[], segments: string[], accumulat
 
 export function buildCategoryTree(categoryPaths: string[]): CategoryNode[] {
   const roots: CategoryNode[] = [];
+  const countByPath = new Map<string, number>();
   for (const path of categoryPaths) {
+    countByPath.set(path, (countByPath.get(path) ?? 0) + 1);
     const segments = path
       .split(">")
       .map((segment) => segment.trim())
       .filter(Boolean);
     insertCategoryPath(roots, segments, "");
   }
-  const sortRecursively = (nodes: CategoryNode[]): CategoryNode[] =>
+  const applyCounts = (nodes: CategoryNode[]): CategoryNode[] =>
     nodes
       .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))
-      .map((node) => ({ ...node, children: sortRecursively(node.children) }));
-  return sortRecursively(roots);
+      .map((node) => ({
+        ...node,
+        productCount: countByPath.get(node.fullPath) ?? 0,
+        children: applyCounts(node.children),
+      }));
+  return applyCounts(roots);
 }
 
 export interface CatalogCategorySheetProps {
@@ -99,8 +111,12 @@ export function CatalogCategorySheet({ open, tipo, selected, onSelect, onClose }
         if (cancelled) return;
         if (!json.success) throw new Error(json.error?.message ?? "Não foi possível carregar categorias.");
         const products = (json.data?.products ?? []) as KairoossCatalogProduct[];
-        const unique = Array.from(new Set(products.map((product) => product.category).filter(Boolean)));
-        setCategories(unique);
+        // Mantém repetições — buildCategoryTree usa a contagem de ocorrências
+        // para saber quantos produtos existem em cada categoria/subcategoria.
+        // Deduplicar aqui faria todo nó folha aparecer sempre com 1 produto,
+        // mesmo quando há vários.
+        const allCategories = products.map((product) => product.category).filter(Boolean);
+        setCategories(allCategories);
       })
       .catch((caughtError) => {
         if (cancelled) return;
@@ -236,7 +252,19 @@ export function CatalogCategorySheet({ open, tipo, selected, onSelect, onClose }
                         onClick={() => selectAndClose(node)}
                         className="flex flex-1 items-center justify-between gap-2 py-2.5 pr-3.5 text-left text-sm font-medium"
                       >
-                        <span className="truncate">{node.name}</span>
+                        <span className="flex items-center gap-1.5 truncate">
+                          <span className="truncate">{node.name}</span>
+                          {hasChildren && (
+                            <span className="shrink-0 text-[11px] font-normal text-muted-foreground">
+                              ({node.children.length} subcategoria{node.children.length === 1 ? "" : "s"})
+                            </span>
+                          )}
+                          {!hasChildren && node.productCount > 0 && (
+                            <span className="shrink-0 text-[11px] font-normal text-muted-foreground">
+                              ({node.productCount})
+                            </span>
+                          )}
+                        </span>
                         {isNodeSelected && <Check className="size-4 shrink-0 text-primary" strokeWidth={2.5} />}
                       </button>
                     </div>
@@ -257,7 +285,12 @@ export function CatalogCategorySheet({ open, tipo, selected, onSelect, onClose }
                                   : "text-muted-foreground hover:bg-accent hover:text-foreground",
                               )}
                             >
-                              <span className="truncate">{child.name}</span>
+                              <span className="flex items-center gap-1.5 truncate">
+                                <span className="truncate">{child.name}</span>
+                                {child.productCount > 0 && (
+                                  <span className="shrink-0 text-[11px] opacity-70">({child.productCount})</span>
+                                )}
+                              </span>
                               {isChildSelected && <Check className="size-3.5 shrink-0" strokeWidth={2.5} />}
                             </button>
                           );

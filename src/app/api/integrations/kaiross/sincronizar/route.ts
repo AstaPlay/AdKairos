@@ -126,6 +126,13 @@ export async function POST(request: NextRequest) {
     // painel da Kairóss) que ainda não têm produto correspondente aqui.
     const matchedSellerProductIds = new Set<string>();
 
+    // Produtos locais que precisam de dado do catálogo completo além do que
+    // `seller-produtos` oferece — hoje: custo zerado (produto criado antes da
+    // correção que preenche `cost` a partir do preço sugerido) ou sem imagem
+    // salva. Resolvidos num segundo passo, junto com o catálogo já buscado
+    // para as afiliações novas, para nunca pagar a chamada extra à toa.
+    const pendingEnrichment: Array<{ doc: FirebaseFirestore.QueryDocumentSnapshot; produtoId: string }> = [];
+
     for (const doc of localSnapshot.docs) {
       const product = doc.data() as Product;
       let sellerProductId = product.kaiross?.sellerProductId;
@@ -181,14 +188,24 @@ export async function POST(request: NextRequest) {
       } else {
         summary.unchanged++;
       }
+
+      // Produto legado (afiliado antes da correção de custo, ou cuja imagem
+      // nunca chegou a ser gravada) — precisa do catálogo completo para ser
+      // enriquecido; marcado aqui e resolvido no passo seguinte.
+      const needsCost = !product.kaiross?.cost || product.kaiross.cost <= 0;
+      const needsImage = !product.images || product.images.length === 0;
+      if ((needsCost || needsImage) && product.kaiross?.productId) {
+        pendingEnrichment.push({ doc, produtoId: String(product.kaiross.productId) });
+      }
     }
 
     // Afiliações remotas sem produto local correspondente — o vendedor
-    // afiliou direto no painel da Kairóss. Busca o catálogo completo só se
-    // houver pelo menos uma pendência, para não gastar a chamada à toa.
+    // afiliou direto no painel da Kairóss. Busca o catálogo completo se
+    // houver pelo menos uma pendência (afiliação nova OU produto legado sem
+    // custo/imagem), para não gastar a chamada à toa.
     const newAffiliations = remoteList.filter((item) => !matchedSellerProductIds.has(item.id) && !item.bloqueado);
 
-    if (newAffiliations.length > 0) {
+    if (newAffiliations.length > 0 || pendingEnrichment.length > 0) {
       const catalogResponse = await kairoossRequest("/produtos", session, { method: "GET" }).catch(() => null);
       const catalogRaw: unknown = catalogResponse?.ok ? await catalogResponse.json().catch(() => null) : null;
       const catalogList: KairoossRawProduct[] = Array.isArray(catalogRaw)
@@ -227,7 +244,14 @@ export async function POST(request: NextRequest) {
             productId: mapped.kairoossProductId,
             sellerProductId: affiliation.id,
             checkoutSlug: affiliation.slugCheckout,
-            cost: mapped.cost,
+            // O catálogo da Kairóss não expõe um campo de "custo" isolado —
+            // o próprio fluxo manual de afiliação (catalog-affiliate-sheet.tsx)
+            // usa `product.price` (= precoSugerido do catálogo) como custo de
+            // origem, já que é o valor de referência que o fornecedor cobra do
+            // vendedor. Replicamos a mesma regra aqui para produtos que entram
+            // via sincronização automática, senão eles nunca ganham custo e
+            // ficam com o slider de preço/decomposição escondidos no sheet.
+            cost: mapped.price || mapped.cost,
           },
           createdAt: now,
           updatedAt: now,
@@ -236,6 +260,36 @@ export async function POST(request: NextRequest) {
         ops.push((batch) => batch.set(productRef, newProduct));
         summary.addedFromKaiross++;
         summary.details.push({ productId: productRef.id, name: newProduct.name, change: "added_from_kaiross" });
+      }
+
+      // Cura produtos legados: sem custo (afiliados antes da correção acima)
+      // ou sem imagem salva (mapeamento incompleto em alguma sincronização
+      // anterior). Só grava o que realmente falta — nunca sobrescreve preço,
+      // nome ou qualquer campo já editado pelo vendedor.
+      for (const { doc, produtoId } of pendingEnrichment) {
+        const rawProduct = catalogById.get(produtoId);
+        if (!rawProduct) continue;
+
+        const mapped = mapKairoossProduct(rawProduct);
+        const product = doc.data() as Product;
+        const patch: Record<string, unknown> = {};
+
+        const needsCost = !product.kaiross?.cost || product.kaiross.cost <= 0;
+        if (needsCost && mapped.price > 0) {
+          patch["kaiross.cost"] = mapped.price;
+        }
+
+        const needsImage = !product.images || product.images.length === 0;
+        if (needsImage && mapped.images.length > 0) {
+          patch.images = mapped.images;
+        }
+
+        if (Object.keys(patch).length > 0) {
+          patch.updatedAt = now;
+          ops.push((batch) => batch.update(doc.ref, patch));
+          summary.updated++;
+          summary.details.push({ productId: doc.id, name: product.name, change: "updated" });
+        }
       }
     }
 

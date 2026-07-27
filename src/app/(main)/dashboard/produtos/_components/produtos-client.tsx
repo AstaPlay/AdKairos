@@ -19,11 +19,32 @@ interface ProdutosResponse {
   total: number;
 }
 
+interface SyncSummary {
+  checked: number;
+  removedRemotely: number;
+  updated: number;
+  unchanged: number;
+  addedFromKaiross: number;
+}
+
 async function fetchProdutos(): Promise<ProdutosResponse> {
   const response = await fetch("/api/produtos");
   const json = await response.json();
   if (!json.success) throw new Error(json.error?.message ?? "Não foi possível buscar seus produtos agora.");
   return json.data as ProdutosResponse;
+}
+
+/**
+ * Mesma rota de sincronização usada em Catálogo (catalog-section.tsx) — aqui
+ * ela também precisa rodar, senão um produto afiliado direto no painel da
+ * Kairóss (sem nunca abrir a tela Catálogo do AdKairos) nunca aparece nesta
+ * página, e produtos legados sem custo/imagem nunca são corrigidos.
+ */
+async function sincronizar(): Promise<SyncSummary> {
+  const response = await fetch("/api/integrations/kaiross/sincronizar", { method: "POST" });
+  const json = await response.json();
+  if (!json.success) throw new Error(json.error?.message ?? "Não foi possível sincronizar agora.");
+  return json.data as SyncSummary;
 }
 
 async function patchProduto(
@@ -66,6 +87,7 @@ export function ProdutosClient() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [pendingIds, setPendingIds] = React.useState<Set<string>>(new Set());
+  const [isSyncing, setIsSyncing] = React.useState(false);
 
   const load = React.useCallback(() => {
     setIsLoading(true);
@@ -77,8 +99,30 @@ export function ProdutosClient() {
   }, []);
 
   React.useEffect(() => {
-    load();
+    // Sincroniza com a Kairóss antes da primeira leitura — best-effort: se
+    // falhar (não conectado, rede fora), segue direto pro fetch local, que
+    // sempre reflete o que já está salvo. Sem isso, produtos afiliados
+    // direto no painel da Kairóss só apareceriam aqui depois de o usuário
+    // passar pela tela Catálogo (onde esse sync automático já existia).
+    fetch("/api/integrations/kaiross/sincronizar", { method: "POST" })
+      .catch(() => {})
+      .finally(load);
   }, [load]);
+
+  async function handleSincronizar() {
+    setIsSyncing(true);
+    try {
+      const result = await sincronizar();
+      toast.success(
+        `Sincronizado: ${result.updated} atualizado(s), ${result.addedFromKaiross} adicionado(s), ${result.removedRemotely} removido(s).`,
+      );
+      load();
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setIsSyncing(false);
+    }
+  }
 
   function markPending(id: string, pending: boolean) {
     setPendingIds((previous) => {
@@ -162,6 +206,12 @@ export function ProdutosClient() {
 
   return (
     <div className="flex flex-col gap-4 md:gap-6">
+      <div className="flex justify-end">
+        <Button variant="ghost" size="sm" onClick={handleSincronizar} disabled={isSyncing}>
+          <RefreshCw data-icon="inline-start" className={isSyncing ? "animate-spin" : ""} />
+          {isSyncing ? "Sincronizando..." : "Sincronizar com a Kairóss"}
+        </Button>
+      </div>
       <KpiCards products={products} />
       <ProductsSection
         products={products}

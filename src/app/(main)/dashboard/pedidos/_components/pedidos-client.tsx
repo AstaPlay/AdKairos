@@ -104,12 +104,13 @@ function statusBadgeVariant(status: string): "default" | "secondary" | "destruct
   return "secondary";
 }
 
-type PeriodKey = "hoje" | "ontem" | "mes_atual" | "ultimos_30" | "tudo";
+type PeriodKey = "hoje" | "ontem" | "mes_atual" | "ultimo_mes" | "ultimos_30" | "tudo";
 
 const PERIOD_OPTIONS: Array<{ key: PeriodKey; label: string }> = [
   { key: "hoje", label: "Hoje" },
   { key: "ontem", label: "Ontem" },
   { key: "mes_atual", label: "Mês atual" },
+  { key: "ultimo_mes", label: "Último mês" },
   { key: "ultimos_30", label: "Últimos 30 dias" },
   { key: "tudo", label: "Tudo" },
 ];
@@ -130,6 +131,13 @@ function isWithinPeriod(dataIso: string, period: PeriodKey): boolean {
   if (period === "mes_atual") {
     return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
   }
+  if (period === "ultimo_mes") {
+    // Mês civil anterior por completo (1º ao último dia) — diferente de
+    // "últimos 30 dias", que é uma janela rolante a partir de hoje.
+    const targetMonth = now.getMonth() - 1;
+    const lastMonthDate = new Date(now.getFullYear(), targetMonth, 1);
+    return date.getFullYear() === lastMonthDate.getFullYear() && date.getMonth() === lastMonthDate.getMonth();
+  }
   // ultimos_30
   const thirtyDaysAgo = new Date(now);
   thirtyDaysAgo.setDate(now.getDate() - 30);
@@ -140,18 +148,25 @@ const dailyChartConfig = {
   pedidos: { label: "Pedidos", color: "var(--chart-1)" },
 } satisfies ChartConfig;
 
+const revenueChartConfig = {
+  receita: { label: "Receita", color: "var(--chart-2)" },
+} satisfies ChartConfig;
+
 /** Agrupa pedidos por dia — dado 100% real (dataCriacao de cada pedido),
  * nunca uma série inventada. Sem pedidos suficientes, o gráfico não
  * aparece (ver render condicional abaixo) em vez de mostrar linha vazia. */
 function buildDailySeries(orders: PedidoRow[]) {
-  const byDay = new Map<string, number>();
+  const byDay = new Map<string, { pedidos: number; receita: number }>();
   for (const order of orders) {
     const day = new Date(order.dataCriacao).toISOString().slice(0, 10);
-    byDay.set(day, (byDay.get(day) ?? 0) + 1);
+    const current = byDay.get(day) ?? { pedidos: 0, receita: 0 };
+    current.pedidos += 1;
+    current.receita += order.valorBruto;
+    byDay.set(day, current);
   }
   return Array.from(byDay.entries())
     .sort(([a], [b]) => (a < b ? -1 : 1))
-    .map(([day, pedidos]) => ({ day, pedidos }));
+    .map(([day, values]) => ({ day, ...values }));
 }
 
 const dayFormatter = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" });
@@ -295,34 +310,66 @@ export function PedidosClient() {
       )}
 
       {!pedidosAction.isLoading && dailySeries.length >= 2 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Pedidos por dia</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={dailyChartConfig} className="h-48 w-full">
-              <BarChart data={dailySeries} margin={{ left: 0, right: 0, top: 0, bottom: 0 }}>
-                <CartesianGrid vertical={false} strokeDasharray="0" />
-                <XAxis
-                  dataKey="day"
-                  tickLine={false}
-                  tickMargin={8}
-                  axisLine={false}
-                  tickFormatter={(value) => dayFormatter.format(new Date(String(value)))}
-                />
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      hideIndicator
-                      labelFormatter={(value) => dayFormatter.format(new Date(String(value)))}
-                    />
-                  }
-                />
-                <Bar dataKey="pedidos" fill="var(--color-pedidos)" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Evolução da receita</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={revenueChartConfig} className="h-48 w-full">
+                <BarChart data={dailySeries} margin={{ left: 0, right: 0, top: 0, bottom: 0 }}>
+                  <CartesianGrid vertical={false} strokeDasharray="0" />
+                  <XAxis
+                    dataKey="day"
+                    tickLine={false}
+                    tickMargin={8}
+                    axisLine={false}
+                    tickFormatter={(value) => dayFormatter.format(new Date(String(value)))}
+                  />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        hideIndicator
+                        labelFormatter={(value) => dayFormatter.format(new Date(String(value)))}
+                        formatter={(value) => formatCurrency(Number(value), { currency: "BRL", locale: "pt-BR" })}
+                      />
+                    }
+                  />
+                  <Bar dataKey="receita" fill="var(--color-receita)" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Pedidos por dia</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={dailyChartConfig} className="h-48 w-full">
+                <BarChart data={dailySeries} margin={{ left: 0, right: 0, top: 0, bottom: 0 }}>
+                  <CartesianGrid vertical={false} strokeDasharray="0" />
+                  <XAxis
+                    dataKey="day"
+                    tickLine={false}
+                    tickMargin={8}
+                    axisLine={false}
+                    tickFormatter={(value) => dayFormatter.format(new Date(String(value)))}
+                  />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        hideIndicator
+                        labelFormatter={(value) => dayFormatter.format(new Date(String(value)))}
+                      />
+                    }
+                  />
+                  <Bar dataKey="pedidos" fill="var(--color-pedidos)" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {!pedidosAction.isLoading && periodOrders && periodOrders.length > 0 && (
