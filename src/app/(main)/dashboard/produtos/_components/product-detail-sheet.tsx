@@ -18,6 +18,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Sheet,
@@ -31,31 +32,13 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useAsyncAction } from "@/hooks/use-async-action";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { calcularPrecificacao, STATUS_MARGEM_STYLE } from "@/lib/kaiross-pricing";
 import { cn } from "@/lib/utils";
 
 import type { ProductRow, ProductStatus } from "./produtos-table/schema";
 
 function currency(value: number) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
-
-function marginTone(marginPct: number): { label: string; className: string } {
-  if (marginPct >= 40) {
-    return {
-      label: "Margem saudável",
-      className: "border-transparent bg-emerald-600 text-white dark:bg-emerald-500",
-    };
-  }
-  if (marginPct >= 20) {
-    return {
-      label: "Margem apertada",
-      className: "border-transparent bg-amber-500 text-white",
-    };
-  }
-  return {
-    label: "Margem ruim",
-    className: "border-transparent bg-red-600 text-white",
-  };
 }
 
 async function gerarPalavrasChave(context: {
@@ -108,7 +91,13 @@ export function ProductDetailSheet({
   product: ProductRow | null;
   pending?: boolean;
   onClose: () => void;
-  onSave: (updates: { status: ProductStatus; price: number }) => Promise<boolean | void>;
+  onSave: (updates: {
+    status: ProductStatus;
+    price: number;
+    freteCobrado?: number;
+    custoFrete?: number;
+    clientePagaFrete?: boolean;
+  }) => Promise<boolean | void>;
   onGenerateTags?: (tags: string[]) => Promise<boolean>;
   onRemove: () => Promise<void>;
 }) {
@@ -120,6 +109,9 @@ export function ProductDetailSheet({
   const [isActive, setIsActive] = React.useState(product?.status === "active");
   const [isDirty, setIsDirty] = React.useState(false);
   const [linkCopied, setLinkCopied] = React.useState(false);
+  const [clientePagaFrete, setClientePagaFrete] = React.useState(product?.clientePagaFrete ?? true);
+  const [freteCobrado, setFreteCobrado] = React.useState(product?.freteCobrado ?? 0);
+  const [custoFrete, setCustoFrete] = React.useState(product?.custoFrete ?? 0);
 
   const tagsAction = useAsyncAction(gerarPalavrasChave);
 
@@ -129,6 +121,9 @@ export function ProductDetailSheet({
       setIsActive(product.status === "active");
       setIsDirty(false);
       setLinkCopied(false);
+      setClientePagaFrete(product.clientePagaFrete ?? true);
+      setFreteCobrado(product.freteCobrado ?? 0);
+      setCustoFrete(product.custoFrete ?? 0);
       scrollRef.current?.scrollTo({ top: 0 });
       tagsAction.reset();
     }
@@ -145,11 +140,21 @@ export function ProductDetailSheet({
     setIsDirty(true);
   }
 
+  function handleFreteChange(updates: { clientePagaFrete?: boolean; freteCobrado?: number; custoFrete?: number }) {
+    if (updates.clientePagaFrete !== undefined) setClientePagaFrete(updates.clientePagaFrete);
+    if (updates.freteCobrado !== undefined) setFreteCobrado(updates.freteCobrado);
+    if (updates.custoFrete !== undefined) setCustoFrete(updates.custoFrete);
+    setIsDirty(true);
+  }
+
   async function handleSave() {
     if (!product) return;
     const ok = await onSave({
       status: isActive ? "active" : product.status === "out_of_stock" ? "out_of_stock" : "paused",
       price: salePrice,
+      freteCobrado,
+      custoFrete,
+      clientePagaFrete,
     });
     if (ok !== false) setIsDirty(false);
   }
@@ -175,9 +180,15 @@ export function ProductDetailSheet({
   }
 
   const cost = product.cost ?? 0;
-  const margin = salePrice - cost;
-  const marginPct = salePrice > 0 ? Math.round((margin / salePrice) * 100) : 0;
-  const tone = marginTone(marginPct);
+  const pricing = calcularPrecificacao({
+    custo: cost,
+    venda: salePrice,
+    clientePagaFrete,
+    freteCobrado,
+    custoFrete,
+  });
+  const marginPct = Math.round(pricing.margem);
+  const tone = STATUS_MARGEM_STYLE[pricing.status];
   const minPrice = Math.max(cost, 1);
   const maxPrice = Math.round(product.price * 1.6) || minPrice + 10;
   const checkoutLink = product.link ?? null;
@@ -282,19 +293,134 @@ export function ProductDetailSheet({
                   step={0.5}
                   onValueChange={([value]) => handlePriceChange(value)}
                 />
+                <div className="flex items-center justify-between text-[10.5px] text-muted-foreground">
+                  <span>{currency(pricing.precoMin)} · lucro mín. 10%</span>
+                  <span>{currency(maxPrice)}</span>
+                </div>
               </div>
             )}
 
             <div className="mt-4 flex items-center justify-between gap-3 border-t pt-3.5">
               <div>
                 <p className="text-[11px] font-medium text-muted-foreground">Margem estimada</p>
-                <p className="font-mono text-base font-semibold tabular-nums">{currency(margin)} · {marginPct}%</p>
+                <p className="font-mono text-base font-semibold tabular-nums">{currency(pricing.lucro)} · {marginPct}%</p>
               </div>
-              <Badge variant="outline" className={cn("shrink-0 font-semibold shadow-sm", tone.className)}>
+              <Badge variant="outline" className={cn("shrink-0 font-semibold shadow-sm border-transparent", tone.bg, tone.text)}>
                 {tone.label}
               </Badge>
             </div>
           </div>
+
+          {/* Frete — quem assume o custo, réplica do fluxo real da Kairóss */}
+          <div className="rounded-2xl border bg-card p-4 shadow-sm">
+            <p className="text-[13px] font-semibold">Frete</p>
+            <p className="mb-3 text-[11px] leading-snug text-muted-foreground">
+              Quem assume o custo do envio para o cliente? Afeta a margem mínima recomendada.
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => handleFreteChange({ clientePagaFrete: true })}
+                className={cn(
+                  "rounded-xl border p-3 text-left transition-colors",
+                  clientePagaFrete ? "border-primary bg-primary/5" : "border-border",
+                )}
+              >
+                <p className="text-[12.5px] font-medium">Cliente paga o frete</p>
+                <p className="text-[11px] leading-snug text-muted-foreground">
+                  Calculado no checkout. Você não tem custo de envio.
+                </p>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleFreteChange({ clientePagaFrete: false })}
+                className={cn(
+                  "rounded-xl border p-3 text-left transition-colors",
+                  !clientePagaFrete ? "border-primary bg-primary/5" : "border-border",
+                )}
+              >
+                <p className="text-[12.5px] font-medium">Frete por sua conta</p>
+                <p className="text-[11px] leading-snug text-muted-foreground">
+                  Você assume o custo. Pode aumentar conversão, mas reduz margem.
+                </p>
+              </button>
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1">
+                <Label className="text-[11px] text-muted-foreground">Frete cobrado do cliente</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  value={freteCobrado || ""}
+                  onChange={(event) => handleFreteChange({ freteCobrado: Number(event.target.value) || 0 })}
+                  placeholder="R$ 0,00"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label className="text-[11px] text-muted-foreground">Seu custo real de envio</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  value={custoFrete || ""}
+                  onChange={(event) => handleFreteChange({ custoFrete: Number(event.target.value) || 0 })}
+                  placeholder="R$ 0,00"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Decomposição do preço — mesma fórmula validada em produção do
+              cálculo de precificação Kairóss (imposto 10%, taxa 8,49% + R$2,50) */}
+          {cost > 0 && (
+            <div className="rounded-2xl border bg-card p-4 shadow-sm">
+              <p className="mb-3 text-[13px] font-semibold">Decomposição do preço</p>
+              <div className="flex flex-col gap-1.5 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Preço de venda</span>
+                  <span className="tabular-nums">{currency(salePrice)}</span>
+                </div>
+                {clientePagaFrete && freteCobrado > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">+ Frete (cliente paga)</span>
+                    <span className="tabular-nums">{currency(freteCobrado)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between border-t pt-1.5 font-medium">
+                  <span>= Total da venda</span>
+                  <span className="tabular-nums">{currency(pricing.totalVenda)}</span>
+                </div>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>− Custo do produto</span>
+                  <span className="tabular-nums">−{currency(cost)}</span>
+                </div>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>− Imposto (10%)</span>
+                  <span className="tabular-nums">−{currency(pricing.totalVenda * 0.1)}</span>
+                </div>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>− Taxa Kairóss (8,49% + R$2,50)</span>
+                  <span className="tabular-nums">
+                    −{currency(pricing.totalVenda * 0.0849 + 2.5)}
+                  </span>
+                </div>
+                {custoFrete > 0 && (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>− Seu custo de frete</span>
+                    <span className="tabular-nums">−{currency(custoFrete)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between border-t pt-1.5 text-sm font-semibold">
+                  <span>Sua margem líquida</span>
+                  <span className={cn("tabular-nums", pricing.lucro >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
+                    {currency(pricing.lucro)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Estoque, vendas */}
           <div className="flex flex-wrap gap-1.5">

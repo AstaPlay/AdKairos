@@ -29,5 +29,8 @@ export function mapProductToRow(id: string, product: Product) {
     description: product.description,
     tags: product.tags,
     link: product.link,
+    freteCobrado: product.freteCobrado,
+    custoFrete: product.custoFrete,
+    clientePagaFrete: product.clientePagaFrete,
   };
 }

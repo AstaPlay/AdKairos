@@ -51,21 +51,23 @@ export function KpiCards({ products }: { products: ProductRow[] }) {
   return (
     <section className="space-y-5">
       <div className="space-y-1">
-        <h2 className="text-3xl tracking-tight">Catálogo e inteligência de produtos</h2>
+        <h2 className="text-2xl tracking-tight sm:text-3xl">Catálogo e inteligência de produtos</h2>
         <p className="text-muted-foreground text-sm">
           Cada produto cadastrado aqui alimenta o WhatsApp AI, Instagram AI, automações e o CRM.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
         <Card>
           <CardHeader>
-            <CardDescription className="font-mono uppercase tracking-wide">Total de produtos</CardDescription>
+            <CardDescription className="font-mono text-[11px] tracking-wide break-words uppercase">
+              Total de produtos
+            </CardDescription>
             <CardAction>
-              <Package className="size-4 text-muted-foreground" />
+              <Package className="text-muted-foreground size-4 shrink-0" />
             </CardAction>
           </CardHeader>
-          <CardContent className="flex min-h-11 items-end justify-between">
+          <CardContent className="flex min-h-11 items-end justify-between gap-3">
             <span className="text-3xl leading-none tracking-tight">{total}</span>
             <ProportionRing value={active} total={total} color="#6366f1" />
           </CardContent>
@@ -73,12 +75,12 @@ export function KpiCards({ products }: { products: ProductRow[] }) {
 
         <Card>
           <CardHeader>
-            <CardDescription className="font-mono uppercase tracking-wide">Ativos</CardDescription>
+            <CardDescription className="font-mono text-[11px] tracking-wide break-words uppercase">Ativos</CardDescription>
             <CardAction>
-              <ShoppingBasket className="size-4 text-muted-foreground" />
+              <ShoppingBasket className="text-muted-foreground size-4 shrink-0" />
             </CardAction>
           </CardHeader>
-          <CardContent className="flex min-h-11 items-end justify-between">
+          <CardContent className="flex min-h-11 items-end justify-between gap-3">
             <span className="text-3xl leading-none tracking-tight">{active}</span>
             <ProportionRing value={active} total={total} color="#22c55e" />
           </CardContent>
@@ -86,12 +88,14 @@ export function KpiCards({ products }: { products: ProductRow[] }) {
 
         <Card>
           <CardHeader>
-            <CardDescription className="font-mono uppercase tracking-wide">Sem estoque</CardDescription>
+            <CardDescription className="font-mono text-[11px] tracking-wide break-words uppercase">
+              Sem estoque
+            </CardDescription>
             <CardAction>
-              <PackageX className="size-4 text-muted-foreground" />
+              <PackageX className="text-muted-foreground size-4 shrink-0" />
             </CardAction>
           </CardHeader>
-          <CardContent className="flex min-h-11 items-end justify-between">
+          <CardContent className="flex min-h-11 items-end justify-between gap-3">
             <span className="text-3xl leading-none tracking-tight">{outOfStock}</span>
             <ProportionRing value={outOfStock} total={total} color="#ef4444" />
           </CardContent>
@@ -99,12 +103,14 @@ export function KpiCards({ products }: { products: ProductRow[] }) {
 
         <Card>
           <CardHeader>
-            <CardDescription className="font-mono uppercase tracking-wide">Importados da Kairóss</CardDescription>
+            <CardDescription className="font-mono text-[11px] tracking-wide break-words uppercase">
+              Importados da Kairóss
+            </CardDescription>
             <CardAction>
-              <Sparkles className="size-4 text-muted-foreground" />
+              <Sparkles className="text-muted-foreground size-4 shrink-0" />
             </CardAction>
           </CardHeader>
-          <CardContent className="flex min-h-11 items-end justify-between">
+          <CardContent className="flex min-h-11 items-end justify-between gap-3">
             <span className="text-3xl leading-none tracking-tight">{fromKaiross}</span>
             <ProportionRing value={fromKaiross} total={total} color="#a855f7" />
           </CardContent>

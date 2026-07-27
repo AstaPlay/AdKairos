@@ -21,6 +21,9 @@ const productSchema = z.object({
   salesCount: z.number().optional(),
   salesHistory: z.array(z.number()).optional(),
   link: z.string().optional(),
+  freteCobrado: z.number().optional(),
+  custoFrete: z.number().optional(),
+  clientePagaFrete: z.boolean().optional(),
 });
 
 export const productsSchema = z.array(productSchema);

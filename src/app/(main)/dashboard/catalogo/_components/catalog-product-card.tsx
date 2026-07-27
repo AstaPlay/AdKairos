@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Flame, Globe, ImageOff, PackageX, TrendingUp } from "lucide-react";
+import { Check, Globe, ImageOff, PackageX } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -115,19 +115,6 @@ export function CatalogProductCard({
           )}
         </div>
 
-        {!outOfStock && (isHot || isTrending) && (
-          <div
-            className="absolute top-2 right-2 flex size-6 items-center justify-center rounded-full border border-amber-400/30 bg-black/55 backdrop-blur-md"
-            title={`${product.salesCount} vendas recentes`}
-          >
-            {isHot ? (
-              <Flame className="size-3 text-amber-400" strokeWidth={2} />
-            ) : (
-              <TrendingUp className="size-3 text-amber-400" strokeWidth={2} />
-            )}
-          </div>
-        )}
-
         {alreadySaved && (
           <div className="absolute right-2 bottom-2 flex size-6 items-center justify-center rounded-full bg-emerald-500 text-white">
             <Check className="size-3.5" strokeWidth={3} />
@@ -143,6 +130,20 @@ export function CatalogProductCard({
           <h3 className="line-clamp-2 min-h-[2.4em] text-sm leading-snug font-medium">{product.name}</h3>
           <span className="text-muted-foreground text-xs">{product.category}</span>
         </div>
+
+        {(isHot || isTrending) && (
+          <div className="flex items-center gap-1.5" title={`${product.salesCount} vendas recentes`}>
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+              <div
+                className={cn("h-full rounded-full", isHot ? "bg-amber-500" : "bg-orange-400")}
+                style={{ width: `${Math.max(salesPct, 12)}%` }}
+              />
+            </div>
+            <span className={cn("shrink-0 text-[10px] font-semibold tracking-wide", isHot ? "text-amber-600" : "text-orange-500")}>
+              {isHot ? "QUENTE" : "EM ALTA"}
+            </span>
+          </div>
+        )}
 
         <div className="mt-1 flex items-end justify-between">
           <span className="text-lg font-semibold text-primary tabular-nums">{currency(product.price)}</span>

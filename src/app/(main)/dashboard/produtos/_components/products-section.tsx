@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 
-import { ChevronDownIcon, ListFilter, Plus, Sparkles } from "lucide-react";
+import { ChevronDownIcon, ListFilter, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -63,7 +63,17 @@ export function ProductsSection({
 }: {
   products: ProductRow[];
   pendingIds: Set<string>;
-  onUpdate: (id: string, updates: { status?: ProductStatus; price?: number; tags?: string[] }) => Promise<boolean>;
+  onUpdate: (
+    id: string,
+    updates: {
+      status?: ProductStatus;
+      price?: number;
+      tags?: string[];
+      freteCobrado?: number;
+      custoFrete?: number;
+      clientePagaFrete?: boolean;
+    },
+  ) => Promise<boolean>;
   onRemove: (id: string) => Promise<boolean>;
 }) {
   const [search, setSearch] = React.useState("");
@@ -205,10 +215,6 @@ export function ProductsSection({
                   <Sparkles data-icon="inline-start" />
                   Importar da Kairóss
                 </Link>
-              </Button>
-              <Button size="sm">
-                <Plus data-icon="inline-start" />
-                Novo produto
               </Button>
             </div>
           </CardAction>

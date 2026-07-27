@@ -26,7 +26,17 @@ async function fetchProdutos(): Promise<ProdutosResponse> {
   return json.data as ProdutosResponse;
 }
 
-async function patchProduto(id: string, updates: { status?: ProductStatus; price?: number; tags?: string[] }): Promise<ProductRow> {
+async function patchProduto(
+  id: string,
+  updates: {
+    status?: ProductStatus;
+    price?: number;
+    tags?: string[];
+    freteCobrado?: number;
+    custoFrete?: number;
+    clientePagaFrete?: boolean;
+  },
+): Promise<ProductRow> {
   const response = await fetch(`/api/produtos/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -79,7 +89,17 @@ export function ProdutosClient() {
     });
   }
 
-  async function handleUpdate(id: string, updates: { status?: ProductStatus; price?: number; tags?: string[] }) {
+  async function handleUpdate(
+    id: string,
+    updates: {
+      status?: ProductStatus;
+      price?: number;
+      tags?: string[];
+      freteCobrado?: number;
+      custoFrete?: number;
+      clientePagaFrete?: boolean;
+    },
+  ) {
     markPending(id, true);
     try {
       const updated = await patchProduto(id, updates);

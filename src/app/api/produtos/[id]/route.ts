@@ -12,6 +12,9 @@ interface UpdateBody {
   status?: ProductStatus;
   price?: number;
   tags?: string[];
+  freteCobrado?: number;
+  custoFrete?: number;
+  clientePagaFrete?: boolean;
 }
 
 async function loadOwnedProduct(id: string, ownerId: string) {
@@ -77,6 +80,33 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       );
     }
     updates.tags = body.tags.map((tag) => tag.trim()).filter(Boolean);
+  }
+  if (body.freteCobrado !== undefined) {
+    if (typeof body.freteCobrado !== "number" || !Number.isFinite(body.freteCobrado) || body.freteCobrado < 0) {
+      return NextResponse.json(
+        { success: false, error: { code: "invalid_frete_cobrado", message: "Valor de frete cobrado inválido." } },
+        { status: 400 },
+      );
+    }
+    updates.freteCobrado = body.freteCobrado;
+  }
+  if (body.custoFrete !== undefined) {
+    if (typeof body.custoFrete !== "number" || !Number.isFinite(body.custoFrete) || body.custoFrete < 0) {
+      return NextResponse.json(
+        { success: false, error: { code: "invalid_custo_frete", message: "Custo de frete inválido." } },
+        { status: 400 },
+      );
+    }
+    updates.custoFrete = body.custoFrete;
+  }
+  if (body.clientePagaFrete !== undefined) {
+    if (typeof body.clientePagaFrete !== "boolean") {
+      return NextResponse.json(
+        { success: false, error: { code: "invalid_cliente_paga_frete", message: "Valor inválido para quem paga o frete." } },
+        { status: 400 },
+      );
+    }
+    updates.clientePagaFrete = body.clientePagaFrete;
   }
   if (Object.keys(updates).length === 0) {
     return NextResponse.json(

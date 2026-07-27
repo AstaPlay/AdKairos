@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/require-authenticated-user";
 import { getKairoossSession, readCachedValue, writeCachedValue, kairoossCacheKey } from "@/lib/kaiross-proxy.server";
 import { fetchVendasResumo, fetchPedidosKaiross, type KairoossPedidoRaw } from "@/services/kaiross-integration.service";
+import { upsertPedidosIndex } from "@/lib/pedido-tracking-index.server";
 import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
 
 /**
@@ -82,7 +83,13 @@ export async function GET(request: NextRequest) {
         const cached = await readCachedValue<KairoossPedidoRaw[]>(pedidosCacheKey);
         if (cached) return cached;
         const fresh = await fetchPedidosKaiross(session);
-        if (fresh) await writeCachedValue(pedidosCacheKey, fresh);
+        if (fresh) {
+          await writeCachedValue(pedidosCacheKey, fresh);
+          // Fire-and-forget: mantém o índice de rastreio público atualizado
+          // sem atrasar a resposta desta tela. Falha de indexação nunca
+          // deve impedir o vendedor de ver seus próprios pedidos.
+          void upsertPedidosIndex(user.uid, fresh);
+        }
         return fresh;
       })(),
     ]);

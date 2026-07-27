@@ -36,6 +36,12 @@ export interface Product {
   variants: ProductVariant[];
   source: ProductSource;
   kaiross?: ProductKairoossOrigin;
+  /** Valor cobrado do cliente pelo frete, quando ele assume esse custo. */
+  freteCobrado?: number;
+  /** Custo real do frete pago pelo vendedor (ex: quando ele assume o envio). */
+  custoFrete?: number;
+  /** true = cliente paga o frete no checkout; false = vendedor assume o custo. */
+  clientePagaFrete?: boolean;
   createdAt: string;
   updatedAt: string;
 }

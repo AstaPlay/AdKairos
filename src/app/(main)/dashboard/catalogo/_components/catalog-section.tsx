@@ -6,6 +6,7 @@ import { Flame, LayoutGrid, LogOut, PackageSearch, RefreshCw, Search, ShieldChec
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -46,12 +47,14 @@ async function fetchCatalog(params: {
   maisVendidos: boolean;
   tipo: "nacional" | "internacional";
   categoria: string;
+  apenasEstoque: boolean;
 }): Promise<CatalogResponse> {
   const query = new URLSearchParams();
   if (params.busca) query.set("busca", params.busca);
   if (params.maisVendidos) query.set("maisVendidos", "true");
   if (params.tipo === "internacional") query.set("tipo", "internacional");
   if (params.categoria) query.set("categoria", params.categoria);
+  if (!params.apenasEstoque) query.set("apenasEstoque", "false");
 
   const response = await fetch(`/api/integrations/kaiross/produtos?${query.toString()}`);
   const json = await response.json();
@@ -81,6 +84,7 @@ export function CatalogSection() {
   const [busca, setBusca] = React.useState("");
   const [buscaDebounced, setBuscaDebounced] = React.useState("");
   const [apenasMaisVendidos, setApenasMaisVendidos] = React.useState(false);
+  const [apenasEstoque, setApenasEstoque] = React.useState(true);
   const [tipo, setTipo] = React.useState<"nacional" | "internacional">("nacional");
   const [categoriaSelecionada, setCategoriaSelecionada] = React.useState<CategoryNode | null>(null);
   const [categoriesOpen, setCategoriesOpen] = React.useState(false);
@@ -134,9 +138,10 @@ export function CatalogSection() {
       maisVendidos: apenasMaisVendidos,
       tipo,
       categoria: categoriaSelecionada?.fullPath ?? "",
+      apenasEstoque,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch controlado por busca/filtro/tipo/categoria
-  }, [status?.connected, buscaDebounced, apenasMaisVendidos, tipo, categoriaSelecionada]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch controlado por busca/filtro/tipo/categoria/estoque
+  }, [status?.connected, buscaDebounced, apenasMaisVendidos, tipo, categoriaSelecionada, apenasEstoque]);
 
   function refetchCatalog() {
     catalogAction.execute({
@@ -144,6 +149,7 @@ export function CatalogSection() {
       maisVendidos: apenasMaisVendidos,
       tipo,
       categoria: categoriaSelecionada?.fullPath ?? "",
+      apenasEstoque,
     });
   }
 
@@ -269,6 +275,11 @@ export function CatalogSection() {
               Limpar
             </Button>
           )}
+
+          <label className="flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm select-none">
+            <Checkbox checked={apenasEstoque} onCheckedChange={(checked) => setApenasEstoque(checked === true)} />
+            Em estoque
+          </label>
         </div>
       </div>
 
