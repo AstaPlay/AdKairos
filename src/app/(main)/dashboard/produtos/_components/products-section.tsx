@@ -58,11 +58,13 @@ function checkoutUrlFor(product: ProductRow) {
 export function ProductsSection({
   products,
   pendingIds,
+  highlightId,
   onUpdate,
   onRemove,
 }: {
   products: ProductRow[];
   pendingIds: Set<string>;
+  highlightId?: string | null;
   onUpdate: (
     id: string,
     updates: {
@@ -82,6 +84,18 @@ export function ProductsSection({
   const [pageIndex, setPageIndex] = React.useState(0);
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
   const [detailProduct, setDetailProduct] = React.useState<ProductRow | null>(null);
+
+  // Ao chegar aqui vindo do Catálogo (ver highlightId), abre direto o sheet
+  // do produto em vez de só destacar visualmente o card no grid — o produto
+  // pode estar em qualquer página da listagem paginada/filtrada, então um
+  // anel visual sozinho poderia nunca ficar visível sem o usuário navegar
+  // manualmente até a página certa.
+  React.useEffect(() => {
+    if (!highlightId) return;
+    const target = products.find((item) => item.id === highlightId);
+    if (target) setDetailProduct(target);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- só na chegada com highlightId; não reabre se o usuário fechar o sheet manualmente
+  }, [highlightId, products.length > 0]);
 
   // Mantém o sheet sincronizado com a versão mais recente do produto: como
   // `products` é a fonte da verdade (dono do estado em ProdutosClient), sem

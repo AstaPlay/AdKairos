@@ -312,7 +312,7 @@ export function CatalogAffiliateSheet({
                     )}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element -- miniatura remota */}
-                    <img src={image} alt="" className="h-full w-full object-cover" />
+                    <img src={image} alt="" loading="lazy" className="h-full w-full object-cover" />
                   </button>
                 ))}
               </div>

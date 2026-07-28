@@ -2,6 +2,8 @@
 
 import * as React from "react";
 
+import { useSearchParams } from "next/navigation";
+
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
@@ -83,6 +85,13 @@ async function deleteProduto(id: string): Promise<void> {
  * lugares ao mesmo tempo, sem esperar um refetch.
  */
 export function ProdutosClient() {
+  const searchParams = useSearchParams();
+  // Preenchido quando o usuário chega aqui a partir do Catálogo, ao clicar
+  // num produto que já estava afiliado (ver handleOpenExisting em
+  // catalog-section.tsx) — antes esse parâmetro era só gerado e nunca lido,
+  // então o produto nunca era realmente destacado na chegada.
+  const highlightId = searchParams.get("highlight");
+
   const [products, setProducts] = React.useState<ProductRow[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -99,15 +108,25 @@ export function ProdutosClient() {
   }, []);
 
   React.useEffect(() => {
-    // Sincroniza com a Kairóss antes da primeira leitura — best-effort: se
-    // falhar (não conectado, rede fora), segue direto pro fetch local, que
-    // sempre reflete o que já está salvo. Sem isso, produtos afiliados
-    // direto no painel da Kairóss só apareceriam aqui depois de o usuário
-    // passar pela tela Catálogo (onde esse sync automático já existia).
+    // Carrega o que já está salvo imediatamente — não faz sentido o usuário
+    // esperar a chamada de rede à Kairóss (pode levar vários segundos) para
+    // ver produtos que já estão no Firestore prontos para exibir. A
+    // sincronização roda em paralelo, em segundo plano, e só then dispara um
+    // segundo load() quando (e se) trouxer algo novo — mesmo padrão já usado
+    // em catalog-section.tsx. Best-effort: falha de rede/desconexão não deve
+    // impedir a tela de mostrar o que já existe localmente.
+    load();
     fetch("/api/integrations/kaiross/sincronizar", { method: "POST" })
-      .catch(() => {})
-      .finally(load);
-  }, [load]);
+      .then((response) => response.json())
+      .then((json) => {
+        const summary = json?.data as SyncSummary | undefined;
+        if (summary && (summary.updated > 0 || summary.addedFromKaiross > 0 || summary.removedRemotely > 0)) {
+          load();
+        }
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- roda uma vez ao montar; load é estável (useCallback sem deps)
+  }, []);
 
   async function handleSincronizar() {
     setIsSyncing(true);
@@ -216,6 +235,7 @@ export function ProdutosClient() {
       <ProductsSection
         products={products}
         pendingIds={pendingIds}
+        highlightId={highlightId}
         onUpdate={handleUpdate}
         onRemove={handleRemove}
       />

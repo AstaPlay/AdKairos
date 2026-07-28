@@ -2,6 +2,8 @@
 
 import * as React from "react";
 
+import { useRouter } from "next/navigation";
+
 import { Flame, LayoutGrid, LogOut, PackageSearch, RefreshCw, Search, ShieldCheck, X } from "lucide-react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -78,6 +80,7 @@ async function sincronizar(): Promise<SyncSummary> {
 }
 
 export function CatalogSection() {
+  const router = useRouter();
   const [status, setStatus] = React.useState<ConnectionStatus | null>(null);
   const [hasCheckedStatus, setHasCheckedStatus] = React.useState(false);
 
@@ -178,7 +181,10 @@ export function CatalogSection() {
   }
 
   function handleOpenExisting(localProductId: string) {
-    window.location.href = `/dashboard/produtos?highlight=${localProductId}`;
+    // router.push mantém a navegação client-side (SPA) do Next.js — o
+    // window.location.href anterior forçava um reload completo da página,
+    // perdendo o estado da aplicação e sendo visivelmente mais lento.
+    router.push(`/dashboard/produtos?highlight=${localProductId}`);
   }
 
   if (!hasCheckedStatus || !status) {

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { firebaseAdminFirestore } from "@/firebase/admin";
 import { requireAuthenticatedUser } from "@/lib/require-authenticated-user";
 import { mapProductToRow } from "@/lib/map-product-row";
+import { calcularPrecificacao } from "@/lib/kaiross-pricing";
 import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
 import type { Product, ProductStatus } from "@/types/product.types";
 
@@ -122,6 +123,41 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         { success: false, error: { code: "not_found", message: "Produto não encontrado." } },
         { status: 404 },
       );
+    }
+
+    // Defesa em profundidade: o slider de preço no sheet já trava o mínimo
+    // em `Math.max(cost, 1)` na UI, mas isso não impede uma chamada direta a
+    // este PATCH com um preço abaixo do custo — o que gravaria um produto
+    // vendendo com prejuízo silenciosamente. Recalcula com a mesma fórmula
+    // do frontend (fonte única de verdade em kaiross-pricing.ts) usando o
+    // custo e o frete já efetivos após este update.
+    if (updates.price !== undefined) {
+      const effectiveCost = data.kaiross?.cost ?? 0;
+      const effectiveClientePagaFrete = updates.clientePagaFrete ?? data.clientePagaFrete ?? true;
+      const effectiveFreteCobrado = updates.freteCobrado ?? data.freteCobrado ?? 0;
+      const effectiveCustoFrete = updates.custoFrete ?? data.custoFrete ?? 0;
+
+      if (effectiveCost > 0) {
+        const { precoMin } = calcularPrecificacao({
+          custo: effectiveCost,
+          venda: updates.price,
+          clientePagaFrete: effectiveClientePagaFrete,
+          freteCobrado: effectiveFreteCobrado,
+          custoFrete: effectiveCustoFrete,
+        });
+        if (updates.price < precoMin) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: {
+                code: "price_below_minimum",
+                message: `Preço abaixo do mínimo viável (R$ ${precoMin.toFixed(2)}) — cobriria custo, imposto e taxa da plataforma, mas resultaria em prejuízo.`,
+              },
+            },
+            { status: 400 },
+          );
+        }
+      }
     }
 
     updates.updatedAt = new Date().toISOString();
