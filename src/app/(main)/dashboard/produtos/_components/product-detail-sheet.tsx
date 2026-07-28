@@ -109,6 +109,7 @@ export function ProductDetailSheet({
   const [isActive, setIsActive] = React.useState(product?.status === "active");
   const [isDirty, setIsDirty] = React.useState(false);
   const [linkCopied, setLinkCopied] = React.useState(false);
+  const [brandedLinkCopied, setBrandedLinkCopied] = React.useState(false);
   const [clientePagaFrete, setClientePagaFrete] = React.useState(product?.clientePagaFrete ?? true);
   const [freteCobrado, setFreteCobrado] = React.useState(product?.freteCobrado ?? 0);
   const [custoFrete, setCustoFrete] = React.useState(product?.custoFrete ?? 0);
@@ -121,6 +122,7 @@ export function ProductDetailSheet({
       setIsActive(product.status === "active");
       setIsDirty(false);
       setLinkCopied(false);
+      setBrandedLinkCopied(false);
       setClientePagaFrete(product.clientePagaFrete ?? true);
       setFreteCobrado(product.freteCobrado ?? 0);
       setCustoFrete(product.custoFrete ?? 0);
@@ -170,6 +172,11 @@ export function ProductDetailSheet({
   }
 
   const [imageFailed, setImageFailed] = React.useState(false);
+  const [origin, setOrigin] = React.useState("");
+
+  React.useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
   React.useEffect(() => {
     setImageFailed(false);
@@ -192,6 +199,13 @@ export function ProductDetailSheet({
   const minPrice = Math.max(cost, 1);
   const maxPrice = Math.round(product.price * 1.6) || minPrice + 10;
   const checkoutLink = product.link ?? null;
+
+  // O checkout com marca própria (`/checkout/[slug]`) usa o mesmo slug que
+  // já vem no link da Kairóss — extraído do último segmento da URL, já que
+  // `ProductRow` não expõe `kaiross.checkoutSlug` separadamente (ver
+  // `map-product-row.ts`). Só existe quando o produto já tem link Kairóss.
+  const checkoutSlug = checkoutLink ? checkoutLink.split("/").filter(Boolean).pop() : null;
+  const brandedCheckoutLink = checkoutSlug && origin ? `${origin}/checkout/${checkoutSlug}` : null;
 
   // Palavras-chave já salvas no produto têm prioridade sobre o resultado
   // recém-gerado nesta sessão (que já foi persistido por onGenerateTags,
@@ -445,7 +459,7 @@ export function ProductDetailSheet({
           {/* Link de checkout, quando existir */}
           {checkoutLink && (
             <div className="flex flex-col gap-1.5">
-              <Label className="text-[11px] text-muted-foreground">Link de checkout</Label>
+              <Label className="text-[11px] text-muted-foreground">Link de checkout (Kairóss)</Label>
               <div className="flex items-center gap-2 rounded-lg border bg-background p-2.5">
                 <p className="min-w-0 flex-1 truncate font-mono text-[11.5px]">{checkoutLink}</p>
                 <button
@@ -478,6 +492,56 @@ export function ProductDetailSheet({
                   <ExternalLink className="size-3.5" strokeWidth={2} />
                 </a>
               </div>
+            </div>
+          )}
+
+          {/* Checkout com marca própria (/checkout/[slug]) — mesmo produto e
+              pagamento, mas com a identidade visual do AdKairos em vez do
+              domínio pay.kaiross.com.br. Só aparece quando já dá para
+              derivar o slug do link Kairóss existente. */}
+          {brandedCheckoutLink && (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <Label className="text-[11px] text-muted-foreground">Link de checkout (sua marca)</Label>
+                <Badge variant="secondary" className="text-[9.5px]">
+                  Novo
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 p-2.5">
+                <p className="min-w-0 flex-1 truncate font-mono text-[11.5px]">{brandedCheckoutLink}</p>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(brandedCheckoutLink);
+                    setBrandedLinkCopied(true);
+                    setTimeout(() => setBrandedLinkCopied(false), 1800);
+                  }}
+                  aria-label="Copiar link de checkout com marca própria"
+                  className="flex shrink-0 items-center gap-1 rounded-md border px-2 py-1 font-mono text-[10.5px] transition-colors hover:border-primary hover:text-primary"
+                >
+                  {brandedLinkCopied ? (
+                    <>
+                      <Check className="size-3" strokeWidth={2.5} /> Copiado
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="size-3" strokeWidth={2} /> Copiar
+                    </>
+                  )}
+                </button>
+                <a
+                  href={brandedCheckoutLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Abrir link de checkout com marca própria"
+                  className="shrink-0 text-muted-foreground transition-colors hover:text-primary"
+                >
+                  <ExternalLink className="size-3.5" strokeWidth={2} />
+                </a>
+              </div>
+              <p className="text-[10.5px] leading-snug text-muted-foreground">
+                Mesmo produto e pagamento, com a identidade visual da sua loja em vez do domínio da Kairóss.
+              </p>
             </div>
           )}
 
