@@ -57,8 +57,8 @@ export function ProductCard({
   return (
     <Card
       className={cn(
-        "gap-3 py-0 transition-colors",
-        "cursor-pointer hover:ring-primary/40",
+        "group gap-3 overflow-hidden py-0 transition-all duration-200",
+        "cursor-pointer hover:-translate-y-0.5 hover:shadow-lg hover:ring-2 hover:ring-primary/40",
         highlighted && "ring-2 ring-primary/50",
         pending && "pointer-events-none opacity-60",
       )}
@@ -75,12 +75,21 @@ export function ProductCard({
       <div className="relative aspect-[4/3] shrink-0 overflow-hidden bg-muted">
         {product.image ? (
           // eslint-disable-next-line @next/next/no-img-element -- imagem remota do catálogo
-          <img src={product.image} alt={product.name} loading="lazy" className="h-full w-full object-cover" />
+          <img
+            src={product.image}
+            alt={product.name}
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
         ) : (
           <div className="flex h-full items-center justify-center text-muted-foreground/40">
             <ImageOff className="size-6" strokeWidth={1.5} />
           </div>
         )}
+
+        {/* Gradiente sutil no rodapé da imagem para os controles (checkbox, menu)
+            manterem contraste mesmo sobre fotos claras. */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/50 to-transparent" />
 
         <div className="absolute left-2 top-2 z-10 flex flex-col items-start gap-1">
           <Badge
@@ -178,7 +187,16 @@ export function ProductCard({
 
         <div className="mt-1 flex items-end justify-between">
           <span className="text-lg font-semibold tabular-nums text-primary">{currency(product.price)}</span>
-          <span className={cn("text-xs tabular-nums", product.stock === 0 ? "text-destructive" : "text-muted-foreground")}>
+          <span
+            className={cn(
+              "rounded-full px-1.5 py-0.5 text-xs font-medium tabular-nums",
+              product.stock === 0
+                ? "bg-destructive/10 text-destructive"
+                : product.stock <= 5
+                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                  : "text-muted-foreground",
+            )}
+          >
             {product.stock} un
           </span>
         </div>

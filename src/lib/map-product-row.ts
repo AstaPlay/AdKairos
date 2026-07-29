@@ -22,6 +22,7 @@ export function mapProductToRow(id: string, product: Product) {
     status: product.status,
     source: product.source,
     createdAt: product.createdAt,
+    updatedAt: product.updatedAt,
     image: product.images?.[0] ?? null,
     cost: product.kaiross?.cost,
     sku: product.sku,

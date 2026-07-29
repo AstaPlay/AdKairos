@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 
-import { ChevronDownIcon, ListFilter, Sparkles } from "lucide-react";
+import { ChevronDownIcon, ListFilter, PauseCircle, PlayCircle, Sparkles, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -84,6 +84,7 @@ export function ProductsSection({
   const [pageIndex, setPageIndex] = React.useState(0);
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
   const [detailProduct, setDetailProduct] = React.useState<ProductRow | null>(null);
+  const [bulkBusy, setBulkBusy] = React.useState(false);
 
   // Ao chegar aqui vindo do Catálogo (ver highlightId), abre direto o sheet
   // do produto em vez de só destacar visualmente o card no grid — o produto
@@ -179,6 +180,50 @@ export function ProductsSection({
     }
   }
 
+  const selectedProducts = React.useMemo(
+    () => products.filter((product) => selectedIds.has(product.id)),
+    [products, selectedIds],
+  );
+
+  /**
+   * Ações em lote sobre a seleção — sem isso, marcar checkboxes não tinha
+   * nenhum efeito real na página, o que é confuso: o usuário seleciona
+   * vários produtos esperando poder agir sobre eles de uma vez (pausar toda
+   * uma categoria, remover um lote que saiu de linha), não só um por um pelo
+   * menu de três pontinhos. Roda sequencialmente (não Promise.all) para não
+   * estourar o Firestore com escritas concorrentes demais de uma vez só.
+   */
+  async function handleBulkPause(pause: boolean) {
+    setBulkBusy(true);
+    let okCount = 0;
+    for (const product of selectedProducts) {
+      const ok = await onUpdate(product.id, { status: pause ? "paused" : "active" });
+      if (ok) okCount++;
+    }
+    setBulkBusy(false);
+    if (okCount > 0) {
+      toast.success(
+        pause ? `${okCount} produto(s) pausado(s)` : `${okCount} produto(s) reativado(s)`,
+      );
+    }
+  }
+
+  async function handleBulkRemove() {
+    setBulkBusy(true);
+    let okCount = 0;
+    for (const product of selectedProducts) {
+      const ok = await onRemove(product.id);
+      if (ok) okCount++;
+    }
+    setBulkBusy(false);
+    setSelectedIds(new Set());
+    if (okCount > 0) toast.success(`${okCount} produto(s) removido(s) da vitrine`);
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+
   function preventNav(event: React.MouseEvent<HTMLAnchorElement>) {
     event.preventDefault();
   }
@@ -227,7 +272,7 @@ export function ProductsSection({
               <Button variant="secondary" size="sm" asChild>
                 <Link href="/dashboard/catalogo">
                   <Sparkles data-icon="inline-start" />
-                  Importar da Kairóss
+                  Ver catálogo Kairóss
                 </Link>
               </Button>
             </div>
@@ -244,10 +289,10 @@ export function ProductsSection({
                   setPageIndex(0);
                 }}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                  "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
                   statusFilter === option
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-transparent text-muted-foreground hover:bg-accent hover:text-foreground",
+                    ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                    : "border-border bg-transparent text-muted-foreground hover:border-primary/40 hover:bg-accent hover:text-foreground",
                 )}
               >
                 {statFilterLabel[option]}
@@ -262,6 +307,32 @@ export function ProductsSection({
               </button>
             ))}
           </div>
+
+          {selectedIds.size > 0 && (
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
+              <span className="text-xs font-medium">
+                {selectedIds.size} selecionado{selectedIds.size > 1 ? "s" : ""}
+              </span>
+              <div className="ml-auto flex flex-wrap items-center gap-1.5">
+                <Button variant="outline" size="sm" disabled={bulkBusy} onClick={() => handleBulkPause(true)}>
+                  <PauseCircle data-icon="inline-start" className="size-3.5" />
+                  Pausar
+                </Button>
+                <Button variant="outline" size="sm" disabled={bulkBusy} onClick={() => handleBulkPause(false)}>
+                  <PlayCircle data-icon="inline-start" className="size-3.5" />
+                  Ativar
+                </Button>
+                <Button variant="destructive" size="sm" disabled={bulkBusy} onClick={handleBulkRemove}>
+                  <Trash2 data-icon="inline-start" className="size-3.5" />
+                  Remover
+                </Button>
+                <Button variant="ghost" size="sm" disabled={bulkBusy} onClick={clearSelection}>
+                  <X data-icon="inline-start" className="size-3.5" />
+                  Limpar
+                </Button>
+              </div>
+            </div>
+          )}
 
           {pageItems.length ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">

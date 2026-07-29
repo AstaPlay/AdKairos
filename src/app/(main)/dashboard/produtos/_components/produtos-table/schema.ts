@@ -12,6 +12,7 @@ const productSchema = z.object({
   status: z.enum(productStatusValues),
   source: z.enum(productSourceValues),
   createdAt: z.string(),
+  updatedAt: z.string().optional(),
   image: z.string().nullable().optional(),
   cost: z.number().optional(),
   sku: z.string().optional(),

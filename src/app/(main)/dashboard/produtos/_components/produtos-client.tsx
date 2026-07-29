@@ -4,12 +4,14 @@ import * as React from "react";
 
 import { useSearchParams } from "next/navigation";
 
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CloudOff, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { getErrorMessage } from "@/utils/get-error-message";
 
 import { KpiCards } from "./kpi-cards";
@@ -70,6 +72,17 @@ async function patchProduto(
   return json.data.product as ProductRow;
 }
 
+function relativeSyncLabel(date: Date | null): string {
+  if (!date) return "Ainda não sincronizado";
+  const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+  if (seconds < 15) return "Sincronizado agora";
+  if (seconds < 60) return `Sincronizado há ${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `Sincronizado há ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  return `Sincronizado há ${hours}h`;
+}
+
 async function deleteProduto(id: string): Promise<void> {
   const response = await fetch(`/api/produtos/${id}`, { method: "DELETE" });
   const json = await response.json();
@@ -97,6 +110,14 @@ export function ProdutosClient() {
   const [error, setError] = React.useState<string | null>(null);
   const [pendingIds, setPendingIds] = React.useState<Set<string>>(new Set());
   const [isSyncing, setIsSyncing] = React.useState(false);
+  // Estado de sincronização exibido no header — cobre tanto o sync automático
+  // ao montar quanto o botão manual, para o usuário sempre ver quando (e se)
+  // o catálogo local foi conferido pela última vez contra a Kairóss, e não
+  // só quando ele mesmo clicou em "Sincronizar".
+  const [lastSyncedAt, setLastSyncedAt] = React.useState<Date | null>(null);
+  const [syncFailed, setSyncFailed] = React.useState(false);
+  // Força o relógio de "há X min" a re-renderizar sem precisar de um novo fetch.
+  const [, forceTick] = React.useState(0);
 
   const load = React.useCallback(() => {
     setIsLoading(true);
@@ -119,24 +140,39 @@ export function ProdutosClient() {
     fetch("/api/integrations/kaiross/sincronizar", { method: "POST" })
       .then((response) => response.json())
       .then((json) => {
+        if (json?.success) {
+          setLastSyncedAt(new Date());
+          setSyncFailed(false);
+        } else {
+          setSyncFailed(true);
+        }
         const summary = json?.data as SyncSummary | undefined;
         if (summary && (summary.updated > 0 || summary.addedFromKaiross > 0 || summary.removedRemotely > 0)) {
           load();
         }
       })
-      .catch(() => {});
+      .catch(() => setSyncFailed(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- roda uma vez ao montar; load é estável (useCallback sem deps)
+  }, []);
+
+  // Atualiza o texto "há X min" a cada 30s sem precisar de novo fetch.
+  React.useEffect(() => {
+    const interval = setInterval(() => forceTick((tick) => tick + 1), 30_000);
+    return () => clearInterval(interval);
   }, []);
 
   async function handleSincronizar() {
     setIsSyncing(true);
     try {
       const result = await sincronizar();
+      setLastSyncedAt(new Date());
+      setSyncFailed(false);
       toast.success(
         `Sincronizado: ${result.updated} atualizado(s), ${result.addedFromKaiross} adicionado(s), ${result.removedRemotely} removido(s).`,
       );
       load();
     } catch (err) {
+      setSyncFailed(true);
       toast.error(getErrorMessage(err));
     } finally {
       setIsSyncing(false);
@@ -209,7 +245,8 @@ export function ProdutosClient() {
   if (isLoading) {
     return (
       <div className="flex flex-col gap-4 md:gap-6">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Skeleton className="h-24 w-full rounded-xl sm:h-28" />
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
             <Skeleton key={index} className="h-28 w-full" />
           ))}
@@ -225,12 +262,50 @@ export function ProdutosClient() {
 
   return (
     <div className="flex flex-col gap-4 md:gap-6">
-      <div className="flex justify-end">
-        <Button variant="ghost" size="sm" onClick={handleSincronizar} disabled={isSyncing}>
-          <RefreshCw data-icon="inline-start" className={isSyncing ? "animate-spin" : ""} />
-          {isSyncing ? "Sincronizando..." : "Sincronizar com a Kairóss"}
-        </Button>
-      </div>
+      <section className="relative overflow-hidden rounded-xl border bg-card px-4 py-5 sm:px-6 sm:py-6">
+        {/* Glow ambiente sutil no acento primário do tema — reforça que esta é
+            a página "central" do catálogo sem depender de cor fixa hardcoded. */}
+        <div
+          className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full bg-primary/10 blur-3xl"
+          aria-hidden
+        />
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1.5">
+            <h2 className="text-2xl tracking-tight sm:text-3xl">Catálogo e inteligência de produtos</h2>
+            <p className="max-w-xl text-muted-foreground text-sm">
+              Cada produto cadastrado aqui alimenta o WhatsApp AI, Instagram AI, automações e o CRM.
+            </p>
+          </div>
+
+          <div className="flex flex-col items-start gap-2 sm:items-end">
+            <Badge
+              variant="outline"
+              className={cn(
+                "gap-1.5 border-transparent px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide",
+                syncFailed
+                  ? "bg-destructive/10 text-destructive"
+                  : lastSyncedAt
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    : "bg-muted text-muted-foreground",
+              )}
+            >
+              {syncFailed ? (
+                <CloudOff className="size-3" />
+              ) : lastSyncedAt ? (
+                <CheckCircle2 className="size-3" />
+              ) : (
+                <RefreshCw className="size-3" />
+              )}
+              {syncFailed ? "Falha na última sincronização" : relativeSyncLabel(lastSyncedAt)}
+            </Badge>
+            <Button variant="outline" size="sm" onClick={handleSincronizar} disabled={isSyncing}>
+              <RefreshCw data-icon="inline-start" className={isSyncing ? "animate-spin" : ""} />
+              {isSyncing ? "Sincronizando..." : "Sincronizar com a Kairóss"}
+            </Button>
+          </div>
+        </div>
+      </section>
+
       <KpiCards products={products} />
       <ProductsSection
         products={products}
