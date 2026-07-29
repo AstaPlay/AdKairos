@@ -32,7 +32,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useAsyncAction } from "@/hooks/use-async-action";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { calcularPrecificacao, STATUS_MARGEM_STYLE } from "@/lib/kaiross-pricing";
+import { calcularPrecificacao, KAIROSS_FEES, STATUS_MARGEM_STYLE } from "@/lib/kaiross-pricing";
 import { cn } from "@/lib/utils";
 
 import type { ProductRow, ProductStatus } from "./produtos-table/schema";
@@ -222,13 +222,16 @@ export function ProductDetailSheet({
         className={cn("flex flex-col gap-0 overflow-hidden p-0 sm:max-w-lg", isMobile && "rounded-t-3xl border-t")}
       >
         {isMobile && (
-          <div className="flex shrink-0 justify-center pt-2.5 pb-1">
-            <div className="h-1 w-9 rounded-full bg-muted-foreground/25" />
+          <div className="absolute inset-x-0 top-0 z-20 flex justify-center pt-2.5 pb-1">
+            <div className="h-1 w-9 rounded-full bg-white/60 shadow-sm" />
           </div>
         )}
 
-        <SheetHeader className="shrink-0 gap-0.5 pb-3">
-          <SheetTitle className="line-clamp-2 leading-snug">{product.name}</SheetTitle>
+        {/* SheetTitle/Description ficam presentes para a11y (leitor de tela),
+            mas visualmente escondidos — o título real é o que aparece
+            sobreposto à imagem logo abaixo, com mais presença. */}
+        <SheetHeader className="sr-only">
+          <SheetTitle>{product.name}</SheetTitle>
           <SheetDescription>
             {product.sku ? `SKU ${product.sku} · ` : ""}
             {product.category}
@@ -237,17 +240,20 @@ export function ProductDetailSheet({
 
         <div
           ref={scrollRef}
-          className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-4"
+          className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pb-4"
           style={{ touchAction: "pan-y", WebkitOverflowScrolling: "touch" }}
         >
-          {/* Imagem grande — mesma linguagem visual do sheet de afiliação */}
-          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border bg-muted">
+          {/* Hero: imagem full-bleed com o título e categoria sobrepostos —
+              mesma lógica de "a imagem é o cabeçalho" que os apps de e-commerce
+              de referência usam, em vez de um título genérico acima de um card
+              de imagem separado. */}
+          <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-muted">
             {product.image && !imageFailed ? (
               // eslint-disable-next-line @next/next/no-img-element -- imagem remota do catálogo
               <img
                 src={product.image}
                 alt={product.name}
-                className="h-full w-full object-contain"
+                className="h-full w-full object-cover"
                 onError={() => setImageFailed(true)}
               />
             ) : (
@@ -256,20 +262,29 @@ export function ProductDetailSheet({
                 {imageFailed && <p className="text-[11px]">Não foi possível carregar a imagem</p>}
               </div>
             )}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/35 to-transparent" />
-            {product.category && (
-              <span className="absolute bottom-2.5 left-2.5 rounded-full bg-black/45 px-2.5 py-1 font-mono text-[10px] font-medium tracking-[0.04em] text-white backdrop-blur-sm">
-                {product.category}
-              </span>
-            )}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-black/30" />
+
             {product.source === "kaiross" && (
-              <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-medium text-white backdrop-blur-sm">
+              <span className="absolute top-3.5 right-4 inline-flex items-center gap-1 rounded-full bg-black/50 px-2.5 py-1 text-[10px] font-medium text-white backdrop-blur-md">
                 <Sparkles className="size-3" strokeWidth={2} />
                 Kairóss
               </span>
             )}
+
+            <div className="absolute inset-x-4 bottom-3.5">
+              {product.category && (
+                <span className="mb-1.5 inline-block rounded-full bg-white/15 px-2.5 py-1 font-mono text-[10px] font-medium tracking-[0.04em] text-white backdrop-blur-md">
+                  {product.category}
+                </span>
+              )}
+              <h2 className="line-clamp-2 text-xl font-semibold leading-tight text-white drop-shadow-sm">
+                {product.name}
+              </h2>
+              {product.sku && <p className="mt-0.5 font-mono text-[11px] text-white/70">SKU {product.sku}</p>}
+            </div>
           </div>
 
+          <div className="flex flex-col gap-5 px-4">
           {/* Produto ativo */}
           <div className="flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 shadow-sm">
             <div className="min-w-0">
@@ -281,21 +296,47 @@ export function ProductDetailSheet({
             <Switch checked={isActive} onCheckedChange={handleActiveChange} />
           </div>
 
-          {/* Preço, custo, margem — bloco único com hierarquia clara */}
-          <div className="rounded-2xl border bg-card p-4 shadow-sm">
-            <div className="grid grid-cols-2 gap-3">
+          {/* Preço, custo, margem — bloco hero com glow no tom do status de
+              margem (mesma cor do badge), preço em destaque tipográfico forte
+              como o "SEU PREÇO FINAL" da Kairóss, em vez de um card neutro. */}
+          <div
+            className={cn(
+              "relative overflow-hidden rounded-2xl border p-4 shadow-sm",
+              tone.border,
+              tone.bg,
+            )}
+          >
+            <div
+              className={cn("pointer-events-none absolute -right-10 -top-10 size-40 rounded-full opacity-20 blur-3xl", tone.text)}
+              style={{ backgroundColor: "currentColor" }}
+              aria-hidden
+            />
+            <div className="relative flex items-end justify-between gap-3">
               <div>
-                <p className="text-[11px] font-medium text-muted-foreground">Preço de venda</p>
-                <p className="font-mono text-lg font-semibold tabular-nums">{currency(salePrice)}</p>
+                <p className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Seu preço final
+                </p>
+                <p className="font-mono text-3xl font-bold leading-none tabular-nums">{currency(salePrice)}</p>
               </div>
               <div className="text-right">
-                <p className="text-[11px] font-medium text-muted-foreground">Custo</p>
-                <p className="font-mono text-lg font-semibold tabular-nums">{currency(cost)}</p>
+                <p className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Margem estimada
+                </p>
+                <p className={cn("font-mono text-xl font-bold leading-none tabular-nums", tone.text)}>
+                  {currency(pricing.lucro)}
+                </p>
+                <p className={cn("mt-0.5 text-[11px] font-medium", tone.text)}>
+                  {marginPct}% · {tone.label}
+                </p>
               </div>
             </div>
 
+            <p className="relative mt-1.5 text-[10.5px] text-muted-foreground">
+              Custo do fornecedor: {currency(cost)}
+            </p>
+
             {cost > 0 && (
-              <div className="mt-4 flex flex-col gap-2 border-t pt-3.5">
+              <div className="relative mt-4 flex flex-col gap-2 border-t border-current/10 pt-3.5">
                 <div className="flex items-center justify-between">
                   <Label className="text-[11px] text-muted-foreground">Ajustar preço de venda</Label>
                   <span className="font-mono text-sm font-semibold tabular-nums">{currency(salePrice)}</span>
@@ -313,16 +354,6 @@ export function ProductDetailSheet({
                 </div>
               </div>
             )}
-
-            <div className="mt-4 flex items-center justify-between gap-3 border-t pt-3.5">
-              <div>
-                <p className="text-[11px] font-medium text-muted-foreground">Margem estimada</p>
-                <p className="font-mono text-base font-semibold tabular-nums">{currency(pricing.lucro)} · {marginPct}%</p>
-              </div>
-              <Badge variant="outline" className={cn("shrink-0 font-semibold shadow-sm border-transparent", tone.bg, tone.text)}>
-                {tone.label}
-              </Badge>
-            </div>
           </div>
 
           {/* Frete — quem assume o custo, réplica do fluxo real da Kairóss */}
@@ -336,10 +367,13 @@ export function ProductDetailSheet({
                 type="button"
                 onClick={() => handleFreteChange({ clientePagaFrete: true })}
                 className={cn(
-                  "rounded-xl border p-3 text-left transition-colors",
-                  clientePagaFrete ? "border-primary bg-primary/5" : "border-border",
+                  "relative rounded-xl border p-3 text-left transition-colors",
+                  clientePagaFrete ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border hover:border-primary/30",
                 )}
               >
+                {clientePagaFrete && (
+                  <Check className="absolute right-2.5 top-2.5 size-3.5 text-primary" strokeWidth={2.5} />
+                )}
                 <p className="text-[12.5px] font-medium">Cliente paga o frete</p>
                 <p className="text-[11px] leading-snug text-muted-foreground">
                   Calculado no checkout. Você não tem custo de envio.
@@ -349,10 +383,13 @@ export function ProductDetailSheet({
                 type="button"
                 onClick={() => handleFreteChange({ clientePagaFrete: false })}
                 className={cn(
-                  "rounded-xl border p-3 text-left transition-colors",
-                  !clientePagaFrete ? "border-primary bg-primary/5" : "border-border",
+                  "relative rounded-xl border p-3 text-left transition-colors",
+                  !clientePagaFrete ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border hover:border-primary/30",
                 )}
               >
+                {!clientePagaFrete && (
+                  <Check className="absolute right-2.5 top-2.5 size-3.5 text-primary" strokeWidth={2.5} />
+                )}
                 <p className="text-[12.5px] font-medium">Frete por sua conta</p>
                 <p className="text-[11px] leading-snug text-muted-foreground">
                   Você assume o custo. Pode aumentar conversão, mas reduz margem.
@@ -387,10 +424,18 @@ export function ProductDetailSheet({
           </div>
 
           {/* Decomposição do preço — mesma fórmula validada em produção do
-              cálculo de precificação Kairóss (imposto 10%, taxa 8,49% + R$2,50) */}
+              cálculo de precificação Kairóss (imposto 10%, taxa 8,49% + R$2,50).
+              O frete é sempre custo real (mesmo cobrado do cliente — ver nota em
+              kaiross-pricing.ts), então aparece nas duas pontas quando for o caso:
+              somado ao total da venda e descontado como custo logístico. */}
           {cost > 0 && (
             <div className="rounded-2xl border bg-card p-4 shadow-sm">
-              <p className="mb-3 text-[13px] font-semibold">Decomposição do preço</p>
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <p className="text-[13px] font-semibold">Decomposição do preço</p>
+                <Badge variant="outline" className="text-[10px] font-medium text-muted-foreground">
+                  {clientePagaFrete ? "Frete: cliente paga" : "Frete: por sua conta"}
+                </Badge>
+              </div>
               <div className="flex flex-col gap-1.5 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Preço de venda</span>
@@ -407,31 +452,56 @@ export function ProductDetailSheet({
                   <span className="tabular-nums">{currency(pricing.totalVenda)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
-                  <span>− Custo do produto</span>
+                  <span>− Custo do fornecedor</span>
                   <span className="tabular-nums">−{currency(cost)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
-                  <span>− Imposto (10%)</span>
-                  <span className="tabular-nums">−{currency(pricing.totalVenda * 0.1)}</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>− Taxa Kairóss (8,49% + R$2,50)</span>
+                  <span>− Imposto NF ({Math.round(KAIROSS_FEES.impostoPercentual * 100)}% sobre total)</span>
                   <span className="tabular-nums">
-                    −{currency(pricing.totalVenda * 0.0849 + 2.5)}
+                    −{currency(pricing.totalVenda * KAIROSS_FEES.impostoPercentual)}
                   </span>
                 </div>
-                {custoFrete > 0 && (
+                {pricing.custoFreteEfetivo > 0 && (
                   <div className="flex justify-between text-muted-foreground">
-                    <span>− Seu custo de frete</span>
-                    <span className="tabular-nums">−{currency(custoFrete)}</span>
+                    <span>− Frete{custoFrete > 0 ? "" : " (repassado)"}</span>
+                    <span className="tabular-nums">−{currency(pricing.custoFreteEfetivo)}</span>
                   </div>
                 )}
+                <div className="flex justify-between text-muted-foreground">
+                  <span>
+                    − Taxa Kairóss ({(KAIROSS_FEES.taxaPlataformaPercentual * 100).toFixed(2).replace(".", ",")}% +{" "}
+                    {currency(KAIROSS_FEES.taxaPlataformaFixa)})
+                  </span>
+                  <span className="tabular-nums">
+                    −{currency(pricing.totalVenda * KAIROSS_FEES.taxaPlataformaPercentual + KAIROSS_FEES.taxaPlataformaFixa)}
+                  </span>
+                </div>
                 <div className="flex justify-between border-t pt-1.5 text-sm font-semibold">
                   <span>Sua margem líquida</span>
                   <span className={cn("tabular-nums", pricing.lucro >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
                     {currency(pricing.lucro)}
                   </span>
                 </div>
+              </div>
+
+              <div
+                className={cn(
+                  "mt-3 flex items-start gap-2 rounded-xl px-3 py-2.5 text-[11.5px] leading-snug",
+                  tone.bg,
+                  tone.text,
+                )}
+              >
+                {pricing.status === "saudavel" ? (
+                  <Check className="mt-0.5 size-3.5 shrink-0" strokeWidth={2.5} />
+                ) : (
+                  <Package className="mt-0.5 size-3.5 shrink-0" strokeWidth={2} />
+                )}
+                <span>
+                  {pricing.status === "saudavel" && "Margem saudável para escalar com tráfego pago."}
+                  {pricing.status === "apertado" && "Margem apertada — cuidado ao investir em anúncios pagos."}
+                  {pricing.status === "ruim" && "Margem baixa. Considere ajustar o preço antes de escalar."}
+                  {pricing.status === "prejuizo" && "Este preço está dando prejuízo — ajuste antes de vender."}
+                </span>
               </div>
             </div>
           )}
@@ -545,6 +615,67 @@ export function ProductDetailSheet({
             </div>
           )}
 
+          {/* Especificações — mesmos dados que a Kairóss expõe na aba
+              "Especificações" do produto, usando só campos que o AdKairos
+              realmente guarda (nunca inventamos cor/tamanho separados sem
+              fonte: quando existem, já vêm como `variants`). */}
+          {(product.sku || product.brand || product.category || cost > 0) && (
+            <div className="rounded-2xl border bg-card p-4 shadow-sm">
+              <p className="mb-3 text-[13px] font-semibold">Especificações</p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-[12.5px]">
+                {product.sku && (
+                  <div>
+                    <p className="text-[10.5px] text-muted-foreground">SKU</p>
+                    <p className="font-mono font-medium">{product.sku}</p>
+                  </div>
+                )}
+                {product.category && (
+                  <div>
+                    <p className="text-[10.5px] text-muted-foreground">Categoria</p>
+                    <p className="font-medium">{product.category}</p>
+                  </div>
+                )}
+                {product.brand && (
+                  <div>
+                    <p className="text-[10.5px] text-muted-foreground">Marca</p>
+                    <p className="font-medium">{product.brand}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-[10.5px] text-muted-foreground">Estoque</p>
+                  <p className={cn("font-medium tabular-nums", product.stock === 0 && "text-destructive")}>
+                    {product.stock} un
+                  </p>
+                </div>
+                {cost > 0 && (
+                  <div>
+                    <p className="text-[10.5px] text-muted-foreground">
+                      {product.source === "kaiross" ? "Custo (fornecedor)" : "Custo de aquisição"}
+                    </p>
+                    <p className="font-medium tabular-nums">{currency(cost)}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-[10.5px] text-muted-foreground">Origem</p>
+                  <p className="font-medium">{product.source === "kaiross" ? "Kairóss" : "Cadastro manual"}</p>
+                </div>
+              </div>
+
+              {product.variants && product.variants.length > 0 && (
+                <div className="mt-3 flex flex-col gap-1.5 border-t pt-3">
+                  <p className="text-[10.5px] text-muted-foreground">Variações</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {product.variants.map((variant) => (
+                      <Badge key={variant.id} variant="secondary" className="text-[11px]">
+                        {variant.label}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Descrição */}
           {product.description && (
             <div className="flex flex-col gap-1.5">
@@ -620,10 +751,11 @@ export function ProductDetailSheet({
               />
             </div>
           </div>
+          </div>
         </div>
 
         <SheetFooter className="shrink-0 flex-row gap-2 border-t bg-popover">
-          <Button variant="outline" className="flex-1" disabled={!isDirty || pending} onClick={handleSave}>
+          <Button variant="default" className="flex-1" disabled={!isDirty || pending} onClick={handleSave}>
             {pending ? "Salvando..." : "Salvar alterações"}
           </Button>
           <Button

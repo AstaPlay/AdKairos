@@ -33,5 +33,6 @@ export function mapProductToRow(id: string, product: Product) {
     freteCobrado: product.freteCobrado,
     custoFrete: product.custoFrete,
     clientePagaFrete: product.clientePagaFrete,
+    variants: product.variants?.length ? product.variants.map((v) => ({ id: v.id, label: v.label })) : undefined,
   };
 }

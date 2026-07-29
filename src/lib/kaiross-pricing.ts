@@ -34,6 +34,8 @@ export interface CalculoPrecificacaoResult {
   margem: number;
   totalVenda: number;
   custoTotal: number;
+  /** Custo de frete efetivamente descontado da margem (explícito ou repassado). */
+  custoFreteEfetivo: number;
   status: StatusMargem;
   precoMin: number;
   precoRec: number;
@@ -61,7 +63,17 @@ export function calcularPrecificacao({
   const pVenda = venda;
   const pCusto = custo;
   const pFreteCobrado = clientePagaFrete ? freteCobrado : 0;
-  const pCustoFrete = custoFrete;
+  // O frete é sempre um custo logístico real para quem vende, mesmo quando
+  // o valor é cobrado do cliente no checkout: a Kairóss repassa esse
+  // dinheiro para a transportadora, não fica como lucro do vendedor. Sem
+  // isso, "cliente paga o frete" parecia zerar o custo de envio e inflava a
+  // margem exibida — conferido byte a byte contra a tela real da Kairóss
+  // (venda R$79,90 + frete R$19,90 = total R$99,80 → margem líquida
+  // R$23,95, não R$43,85). Quando o vendedor ainda não preencheu
+  // `custoFrete` mas está cobrando frete do cliente, usa o valor cobrado
+  // como estimativa de custo — é o cenário mais comum (repassa o valor que
+  // pagou à transportadora).
+  const pCustoFrete = custoFrete > 0 ? custoFrete : pFreteCobrado;
 
   const totalVenda = pVenda + pFreteCobrado;
   const imposto = totalVenda * impostoPercentual;
@@ -84,6 +96,7 @@ export function calcularPrecificacao({
     margem,
     totalVenda,
     custoTotal,
+    custoFreteEfetivo: pCustoFrete,
     status,
     precoMin: Number(precoMin.toFixed(2)),
     precoRec: Number(precoRec.toFixed(2)),

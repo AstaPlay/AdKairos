@@ -25,6 +25,7 @@ const productSchema = z.object({
   freteCobrado: z.number().optional(),
   custoFrete: z.number().optional(),
   clientePagaFrete: z.boolean().optional(),
+  variants: z.array(z.object({ id: z.string(), label: z.string() })).optional(),
 });
 
 export const productsSchema = z.array(productSchema);
