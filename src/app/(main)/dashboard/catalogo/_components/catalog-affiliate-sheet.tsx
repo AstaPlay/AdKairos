@@ -144,6 +144,7 @@ export function CatalogAffiliateSheet({
   const isOpen = product !== null;
   const isMobile = useIsMobile();
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const priceCardRef = React.useRef<HTMLDivElement>(null);
 
   const [activeImage, setActiveImage] = React.useState(0);
   const [freteOpen, setFreteOpen] = React.useState(true);
@@ -258,6 +259,26 @@ export function CatalogAffiliateSheet({
   const sliderMax = Math.max(calculo.precoRec * 1.3, product.price * 2.5);
   const coverImage = product.images[activeImage] ?? product.images[0];
 
+  // Os 3 selos "como funciona" agora são atalhos reais sobre o preço de
+  // venda, não só decoração — antes pareciam clicáveis (borda, padding,
+  // cor de destaque) mas não faziam nada, o que gerava expectativa
+  // frustrada. "Preço de custo" clampado ao mínimo do slider porque vender
+  // exatamente pelo custo já fica abaixo do sliderMin (que embute uma
+  // margem mínima de segurança); os outros dois não precisam de clamp.
+  function handlePresetCusto() {
+    setPrecoVenda(Math.max(product!.price, sliderMin));
+    priceCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  function handlePresetFocarSlider() {
+    priceCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  function handlePresetRecomendado() {
+    setPrecoVenda(calculo!.precoRec);
+    priceCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  const isPresetCusto = Math.abs(precoVenda - Math.max(product.price, sliderMin)) < 0.01;
+  const isPresetRecomendado = Math.abs(precoVenda - calculo.precoRec) < 0.01;
+
   return (
     <Sheet open={isOpen} onOpenChange={(next) => !next && onClose()}>
       <SheetContent
@@ -353,27 +374,47 @@ export function CatalogAffiliateSheet({
 
           {/* Como funciona — os "3 selos" do modelo de dropshipping, mesma
               lógica comunicada pela própria Kairóss (preço de custo / você
-              decide o preço / zero risco de estoque) — ajuda quem está vendo
-              o produto pela primeira vez a entender a mecânica antes de
-              chegar no slider de preço. */}
+              decide o preço / zero risco de estoque), mas aqui também são
+              atalhos reais: cada um aplica (ou foca) um valor no slider de
+              preço logo abaixo, em vez de só ilustrar o conceito. */}
           <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-xl border bg-card p-2.5">
+            <button
+              type="button"
+              onClick={handlePresetCusto}
+              className={cn(
+                "rounded-xl border p-2.5 text-left transition-colors",
+                isPresetCusto ? "border-foreground/40 bg-card ring-1 ring-foreground/15" : "border-border bg-card hover:border-foreground/25",
+              )}
+            >
               <p className="text-[9.5px] font-semibold uppercase tracking-wide text-muted-foreground">Preço de custo</p>
               <p className="mt-1 font-mono text-sm font-bold tabular-nums">R$ {formatarMoeda(product.price)}</p>
               <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">Recomendado pelo fornecedor</p>
-            </div>
-            <div className="rounded-xl border border-primary/30 bg-primary/[0.06] p-2.5">
+            </button>
+            <button
+              type="button"
+              onClick={handlePresetFocarSlider}
+              className="rounded-xl border border-primary/30 bg-primary/[0.06] p-2.5 text-left transition-colors hover:bg-primary/[0.1]"
+            >
               <p className="text-[9.5px] font-semibold uppercase tracking-wide text-primary">Você decide</p>
               <p className="mt-1 text-sm font-bold text-primary">Defina o preço</p>
               <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">Venda pelo preço que quiser</p>
-            </div>
-            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/[0.06] p-2.5">
+            </button>
+            <button
+              type="button"
+              onClick={handlePresetRecomendado}
+              className={cn(
+                "rounded-xl border p-2.5 text-left transition-colors",
+                isPresetRecomendado
+                  ? "border-emerald-500/50 bg-emerald-500/[0.1] ring-1 ring-emerald-500/25"
+                  : "border-emerald-500/30 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.1]",
+              )}
+            >
               <p className="text-[9.5px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
                 Zero risco
               </p>
-              <p className="mt-1 text-sm font-bold text-emerald-600 dark:text-emerald-400">Sem capital</p>
-              <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">Fornecedor cuida da entrega</p>
-            </div>
+              <p className="mt-1 text-sm font-bold text-emerald-600 dark:text-emerald-400">Preço recomendado</p>
+              <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">Margem saudável para escalar</p>
+            </button>
           </div>
 
           {/* Estoque disponível */}
@@ -395,7 +436,7 @@ export function CatalogAffiliateSheet({
             </p>
           </div>
 
-          <div className={cn("relative overflow-hidden rounded-2xl border p-4 shadow-sm", statusStyle.border, statusStyle.bg)}>
+          <div ref={priceCardRef} className={cn("relative overflow-hidden rounded-2xl border p-4 shadow-sm", statusStyle.border, statusStyle.bg)}>
             <div
               className={cn("pointer-events-none absolute -right-10 -top-10 size-40 rounded-full opacity-20 blur-3xl", statusStyle.text)}
               style={{ backgroundColor: "currentColor" }}
