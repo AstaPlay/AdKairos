@@ -8,6 +8,7 @@ import {
   ChevronDown,
   Copy,
   ExternalLink,
+  Globe,
   ImageOff,
   Sparkles,
   TrendingUp,
@@ -176,6 +177,11 @@ export function CatalogAffiliateSheet({
       custo: product.price,
       venda: precoVenda,
       clientePagaFrete: !vendedorAssumeFrete,
+      // Sem valor de frete conhecido nesta etapa (a Kairóss só expõe o custo
+      // real de frete depois que um pedido acontece) — não fingimos saber um
+      // valor com freteCobrado fixo em 0. custoFrete (preenchido manualmente
+      // pelo vendedor) já é tratado como custo real dentro de
+      // calcularPrecificacao mesmo com "cliente paga" ativo.
       freteCobrado: 0,
       custoFrete,
     });
@@ -264,74 +270,139 @@ export function CatalogAffiliateSheet({
         )}
       >
         {isMobile && (
-          <div className="flex shrink-0 justify-center pt-2.5 pb-1">
-            <div className="h-1 w-9 rounded-full bg-muted-foreground/25" />
+          <div className="absolute inset-x-0 top-0 z-20 flex justify-center pt-2.5 pb-1">
+            <div className="h-1 w-9 rounded-full bg-white/60 shadow-sm" />
           </div>
         )}
 
-        <SheetHeader className="shrink-0 gap-0.5 pb-3">
-          <SheetTitle className="flex items-center gap-1.5">
-            <Sparkles className="size-4 text-primary" strokeWidth={2} />
-            Precificar produto
-          </SheetTitle>
+        <SheetHeader className="sr-only">
+          <SheetTitle>Precificar {product.name}</SheetTitle>
           <SheetDescription>{product.category || "Kairóss"}</SheetDescription>
         </SheetHeader>
 
         <div
           ref={scrollRef}
-          className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-4"
+          className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pb-4"
           style={{ touchAction: "pan-y", WebkitOverflowScrolling: "touch" }}
         >
-          <div className="flex flex-col gap-2">
-            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border bg-muted">
-              {coverImage ? (
-                // eslint-disable-next-line @next/next/no-img-element -- imagem remota do catálogo Kairóss
-                <img src={coverImage} alt={product.name} className="h-full w-full object-contain" />
-              ) : (
-                <div className="flex h-full items-center justify-center text-muted-foreground/40">
-                  <ImageOff className="size-8" strokeWidth={1.5} />
-                </div>
-              )}
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/35 to-transparent" />
-              {product.category && (
-                <span className="absolute bottom-2.5 left-2.5 rounded-full bg-black/45 px-2.5 py-1 font-mono text-[10px] font-medium tracking-[0.04em] text-white backdrop-blur-sm">
-                  {product.category}
-                </span>
-              )}
+          {/* Hero fundido: a imagem é o cabeçalho, com nome/categoria/marca
+              sobrepostos em vez de um SheetTitle genérico acima de um card de
+              imagem separado — mesma linguagem visual do sheet de detalhe do
+              produto já afiliado, para manter consistência entre as duas telas. */}
+          <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-muted">
+            {coverImage ? (
+              // eslint-disable-next-line @next/next/no-img-element -- imagem remota do catálogo Kairóss
+              <img src={coverImage} alt={product.name} className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full items-center justify-center text-muted-foreground/40">
+                <ImageOff className="size-8" strokeWidth={1.5} />
+              </div>
+            )}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-black/30" />
+
+            {product.isInternational && (
+              <span className="absolute top-3.5 right-4 inline-flex items-center gap-1 rounded-full bg-black/50 px-2.5 py-1 text-[10px] font-medium text-white backdrop-blur-md">
+                <Globe className="size-3" strokeWidth={2} />
+                Internacional
+              </span>
+            )}
+
+            <div className="absolute inset-x-4 bottom-3.5">
+              <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+                {product.category && (
+                  <span className="inline-block rounded-full bg-white/15 px-2.5 py-1 font-mono text-[10px] font-medium tracking-[0.04em] text-white backdrop-blur-md">
+                    {product.category}
+                  </span>
+                )}
+                {product.brand && (
+                  <span className="inline-block rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-medium text-white backdrop-blur-md">
+                    {product.brand}
+                  </span>
+                )}
+              </div>
+              <h2 className="line-clamp-2 text-xl font-semibold leading-tight text-white drop-shadow-sm">
+                {product.name}
+              </h2>
+              {product.sku && <p className="mt-0.5 font-mono text-[11px] text-white/70">SKU {product.sku}</p>}
             </div>
-            {product.images.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {product.images.map((image, index) => (
-                  <button
-                    key={image}
-                    type="button"
-                    onClick={() => setActiveImage(index)}
-                    className={cn(
-                      "h-14 w-14 shrink-0 overflow-hidden rounded-lg border transition-all duration-200",
-                      index === activeImage ? "border-primary shadow-sm" : "border-transparent opacity-60 hover:opacity-100",
-                    )}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element -- miniatura remota */}
-                    <img src={image} alt="" loading="lazy" className="h-full w-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
-          <div>
-            <h3 className="text-lg leading-snug font-bold tracking-tight">{product.name}</h3>
-            {product.description && (
-              <p className="mt-1.5 line-clamp-3 text-[13px] leading-5 text-muted-foreground">{product.description}</p>
-            )}
+          {product.images.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto px-4 pb-1">
+              {product.images.map((image, index) => (
+                <button
+                  key={image}
+                  type="button"
+                  onClick={() => setActiveImage(index)}
+                  className={cn(
+                    "h-14 w-14 shrink-0 overflow-hidden rounded-lg border transition-all duration-200",
+                    index === activeImage ? "border-primary shadow-sm" : "border-transparent opacity-60 hover:opacity-100",
+                  )}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- miniatura remota */}
+                  <img src={image} alt="" loading="lazy" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-5 px-4">
+          {product.description && (
+            <p className="line-clamp-3 text-[13px] leading-5 text-muted-foreground">{product.description}</p>
+          )}
+
+          {/* Como funciona — os "3 selos" do modelo de dropshipping, mesma
+              lógica comunicada pela própria Kairóss (preço de custo / você
+              decide o preço / zero risco de estoque) — ajuda quem está vendo
+              o produto pela primeira vez a entender a mecânica antes de
+              chegar no slider de preço. */}
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-xl border bg-card p-2.5">
+              <p className="text-[9.5px] font-semibold uppercase tracking-wide text-muted-foreground">Preço de custo</p>
+              <p className="mt-1 font-mono text-sm font-bold tabular-nums">R$ {formatarMoeda(product.price)}</p>
+              <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">Recomendado pelo fornecedor</p>
+            </div>
+            <div className="rounded-xl border border-primary/30 bg-primary/[0.06] p-2.5">
+              <p className="text-[9.5px] font-semibold uppercase tracking-wide text-primary">Você decide</p>
+              <p className="mt-1 text-sm font-bold text-primary">Defina o preço</p>
+              <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">Venda pelo preço que quiser</p>
+            </div>
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/[0.06] p-2.5">
+              <p className="text-[9.5px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                Zero risco
+              </p>
+              <p className="mt-1 text-sm font-bold text-emerald-600 dark:text-emerald-400">Sem capital</p>
+              <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">Fornecedor cuida da entrega</p>
+            </div>
           </div>
 
-          <div className="rounded-2xl border bg-card p-4 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-[11px] font-medium text-muted-foreground">Preço de referência da Kairóss</p>
-                <p className="font-mono text-sm font-semibold">R$ {formatarMoeda(product.price)}</p>
-              </div>
+          {/* Estoque disponível */}
+          <div className="flex items-center justify-between rounded-2xl border bg-card p-4 shadow-sm">
+            <div>
+              <p className="text-[11px] font-medium text-muted-foreground">Estoque disponível</p>
+              <p className="text-[10.5px] leading-snug text-muted-foreground">
+                {product.isInternational ? "Sob encomenda internacional" : "Unidades prontas para venda"}
+              </p>
+            </div>
+            <p
+              className={cn(
+                "font-mono text-2xl font-bold tabular-nums",
+                !product.isInternational && product.stock <= 0 && "text-destructive",
+              )}
+            >
+              {product.isInternational ? "—" : product.stock.toLocaleString("pt-BR")}
+              {!product.isInternational && <span className="ml-1 text-xs font-medium text-muted-foreground">un</span>}
+            </p>
+          </div>
+
+          <div className={cn("relative overflow-hidden rounded-2xl border p-4 shadow-sm", statusStyle.border, statusStyle.bg)}>
+            <div
+              className={cn("pointer-events-none absolute -right-10 -top-10 size-40 rounded-full opacity-20 blur-3xl", statusStyle.text)}
+              style={{ backgroundColor: "currentColor" }}
+              aria-hidden
+            />
+            <div className="relative flex items-center justify-between gap-3">
+              <p className="text-[13px] font-semibold">Defina seu preço de venda</p>
               <Button type="button" variant="outline" size="sm" onClick={handleSugerirPreco} disabled={sugestaoAction.isLoading}>
                 <Wand2 data-icon="inline-start" className="size-3.5" strokeWidth={2} />
                 {sugestaoAction.isLoading ? "Calculando..." : "IA sugere o preço"}
@@ -339,7 +410,7 @@ export function CatalogAffiliateSheet({
             </div>
 
             {sugestaoAction.data && (
-              <div className="animate-in fade-in mt-3 rounded-lg border border-primary/20 bg-primary/[0.06] p-3">
+              <div className="animate-in fade-in relative mt-3 rounded-lg border border-primary/20 bg-primary/[0.06] p-3">
                 <div className="flex items-center gap-1.5 text-primary">
                   <TrendingUp className="size-3.5" strokeWidth={2} />
                   <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.06em]">
@@ -364,7 +435,7 @@ export function CatalogAffiliateSheet({
               </Alert>
             )}
 
-            <div className="mt-4 flex items-end justify-between gap-3">
+            <div className="relative mt-4 flex items-end justify-between gap-3">
               <div>
                 <p className="text-[11px] font-medium text-muted-foreground">Seu preço de venda</p>
                 <p className="text-2xl font-extrabold tracking-tight">R$ {formatarMoeda(precoVenda)}</p>
@@ -380,19 +451,19 @@ export function CatalogAffiliateSheet({
             </div>
 
             <Slider
-              className="mt-3"
+              className="relative mt-3"
               value={[precoVenda]}
               min={sliderMin}
               max={sliderMax}
               step={0.5}
               onValueChange={([value]) => setPrecoVenda(value)}
             />
-            <div className="mt-1.5 flex justify-between font-mono text-[10px] tabular-nums text-muted-foreground/70">
+            <div className="relative mt-1.5 flex justify-between font-mono text-[10px] tabular-nums text-muted-foreground/70">
               <span>mín. R$ {formatarMoeda(calculo.precoMin)}</span>
               <span>recomendado R$ {formatarMoeda(calculo.precoRec)}</span>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-3 border-t pt-3 font-mono text-[11px] tabular-nums">
+            <div className="relative mt-4 grid grid-cols-2 gap-3 border-t pt-3 font-mono text-[11px] tabular-nums">
               <div>
                 <p className="text-muted-foreground">Lucro líquido</p>
                 <p className={cn("font-semibold", statusStyle.text)}>R$ {formatarMoeda(calculo.lucro)}</p>
@@ -600,6 +671,7 @@ export function CatalogAffiliateSheet({
               )}
             </div>
           )}
+          </div>
         </div>
 
         <SheetFooter className="shrink-0 gap-3 border-t bg-popover">
