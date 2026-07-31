@@ -1,5 +1,6 @@
 import {
   Banknote,
+  BrainCircuit,
   Calendar,
   ChartBar,
   CheckSquare,
@@ -133,6 +134,12 @@ export const sidebarItems: NavGroup[] = [
         title: "Produtos",
         url: "/dashboard/produtos",
         icon: Package,
+      },
+      {
+        id: "central-ia",
+        title: "Central de IA",
+        url: "/dashboard/ia",
+        icon: BrainCircuit,
       },
       {
         id: "catalogo",
