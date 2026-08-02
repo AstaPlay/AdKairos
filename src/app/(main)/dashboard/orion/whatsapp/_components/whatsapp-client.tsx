@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { History, KeyRound, MessageCircle, Plus, QrCode, RefreshCw, Smartphone } from "lucide-react";
+import { History, KeyRound, MessageCircle, Plus, QrCode, RefreshCw, Send, Smartphone } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { useAsyncAction } from "@/hooks/use-async-action";
 
 type SessionStatus = "PENDING_QR" | "CONNECTING" | "CONNECTED" | "DISCONNECTED" | "LOGGED_OUT" | "BANNED" | "CORRUPTED";
@@ -87,6 +88,16 @@ async function fetchSentMessages(sessionId: string): Promise<SentMessage[]> {
   const json = await response.json();
   if (!json.success) throw new Error(json.error?.message ?? "Não foi possível buscar o histórico de mensagens agora.");
   return json.messages as SentMessage[];
+}
+
+async function sendMessage(sessionId: string, toJid: string, content: string): Promise<void> {
+  const response = await fetch(`/api/integrations/orion/whatsapp/sessions/${encodeURIComponent(sessionId)}/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ toJid, content }),
+  });
+  const json = await response.json();
+  if (!json.success) throw new Error(json.error?.message ?? "Não foi possível enviar a mensagem agora.");
 }
 
 function formatDate(iso: string) {
@@ -323,10 +334,38 @@ function MessageHistorySheet({
 }) {
   const messagesAction = useAsyncAction((id: string) => fetchSentMessages(id));
   const { execute: loadMessages } = messagesAction;
+  const sendAction = useAsyncAction((id: string, toJid: string, content: string) => sendMessage(id, toJid, content));
+  const [toJid, setToJid] = React.useState("");
+  const [content, setContent] = React.useState("");
 
   React.useEffect(() => {
     if (open && sessionId) void loadMessages(sessionId);
   }, [open, sessionId, loadMessages]);
+
+  // Reseta o form e o estado de erro/loading do envio toda vez que o
+  // sheet fecha ou troca de sessão — evita mostrar erro/sucesso de uma
+  // sessão anterior ao reabrir para outra.
+  const { reset: resetSendAction } = sendAction;
+  React.useEffect(() => {
+    if (!open) {
+      setToJid("");
+      setContent("");
+      resetSendAction();
+    }
+  }, [open, resetSendAction]);
+
+  async function handleSend() {
+    if (!sessionId || !toJid.trim() || !content.trim()) return;
+    // O usuário digita só o número (DDI+DDD+número); o Órion espera o
+    // JID completo do WhatsApp. Se já vier com "@" (colado de outro
+    // lugar), respeita o que foi digitado em vez de duplicar o sufixo.
+    const jid = toJid.trim().includes("@") ? toJid.trim() : `${toJid.trim()}@s.whatsapp.net`;
+    const result = await sendAction.execute(sessionId, jid, content.trim());
+    if (result !== null) {
+      setContent("");
+      void loadMessages(sessionId);
+    }
+  }
 
   const messages = messagesAction.data ?? null;
 
@@ -337,6 +376,34 @@ function MessageHistorySheet({
           <SheetTitle>Histórico de envios</SheetTitle>
           <SheetDescription>Últimas mensagens enviadas por essa sessão, mais recentes primeiro.</SheetDescription>
         </SheetHeader>
+
+        <div className="flex flex-col gap-2 border-b px-4 pb-4">
+          <Label htmlFor="whatsapp-send-tojid">Número (com DDI, sem +)</Label>
+          <Input
+            id="whatsapp-send-tojid"
+            onChange={(event) => setToJid(event.target.value)}
+            placeholder="5511999999999"
+            value={toJid}
+          />
+          <Label htmlFor="whatsapp-send-content">Mensagem</Label>
+          <Textarea
+            id="whatsapp-send-content"
+            onChange={(event) => setContent(event.target.value)}
+            placeholder="Digite a mensagem..."
+            rows={3}
+            value={content}
+          />
+          {sendAction.error && <p className="text-destructive text-xs">{sendAction.error}</p>}
+          <Button
+            className="self-end"
+            disabled={sendAction.isLoading || !toJid.trim() || !content.trim()}
+            onClick={handleSend}
+            size="sm"
+          >
+            {sendAction.isLoading ? <Spinner className="mr-1 size-3.5" /> : <Send className="mr-1 size-3.5" />}
+            Enviar
+          </Button>
+        </div>
 
         <div className="flex flex-col gap-2 overflow-y-auto px-4 pb-4">
           {messagesAction.isLoading && (

@@ -271,6 +271,32 @@ export async function listSentMessages(externalUserId: string, sessionId: string
   return json.messages;
 }
 
+/**
+ * POST /sessions/:id/messages — envia uma mensagem de texto pela sessão
+ * WhatsApp indicada. `toJid` é o destinatário no formato do WhatsApp
+ * (ex. "5511999999999@s.whatsapp.net"). 202 = enfileirado no worker;
+ * não confirma entrega real, só que o job entrou na fila (ver
+ * `listSentMessages` para acompanhar o status do job depois).
+ *
+ * V1 só cobre `type: "text"` — os demais tipos do schema do Órion
+ * (image/video/document/audio/contact/location) exigem upload/mídia,
+ * fora do escopo desta função.
+ */
+export async function sendWhatsAppMessage(
+  externalUserId: string,
+  sessionId: string,
+  toJid: string,
+  content: string,
+): Promise<void> {
+  const response = await orionAuthedRequest(externalUserId, `/sessions/${encodeURIComponent(sessionId)}/messages`, {
+    method: "POST",
+    body: JSON.stringify({ toJid, type: "text", content }),
+  });
+  if (!response.ok) {
+    throw new Error(`Falha ao enviar mensagem do WhatsApp no Órion (HTTP ${response.status})`);
+  }
+}
+
 interface ServiceTokenCacheEntry {
   accessToken: string;
   /** Epoch ms a partir do qual o token é considerado vencido para fins de cache (antes do vencimento real do Órion). */
