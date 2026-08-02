@@ -297,6 +297,22 @@ export async function sendWhatsAppMessage(
   }
 }
 
+/**
+ * POST /sessions/:id/disconnect — pede logout intencional da sessão
+ * (worker derruba o socket Baileys). 202 = enfileirado; o status real
+ * (LOGGED_OUT) chega via `getWhatsAppSession`/`listWhatsAppSessions`
+ * depois que o worker processar. Sessão fica pronta para reconectar
+ * com um novo QR/pairing code, não é excluída do banco.
+ */
+export async function disconnectWhatsAppSession(externalUserId: string, sessionId: string): Promise<void> {
+  const response = await orionAuthedRequest(externalUserId, `/sessions/${encodeURIComponent(sessionId)}/disconnect`, {
+    method: "POST",
+  });
+  if (!response.ok) {
+    throw new Error(`Falha ao desconectar sessão do WhatsApp no Órion (HTTP ${response.status})`);
+  }
+}
+
 interface ServiceTokenCacheEntry {
   accessToken: string;
   /** Epoch ms a partir do qual o token é considerado vencido para fins de cache (antes do vencimento real do Órion). */

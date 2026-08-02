@@ -2,9 +2,19 @@
 
 import * as React from "react";
 
-import { History, KeyRound, MessageCircle, Plus, QrCode, RefreshCw, Send, Smartphone } from "lucide-react";
+import { History, KeyRound, LogOut, MessageCircle, Plus, QrCode, RefreshCw, Send, Smartphone } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -74,6 +84,15 @@ async function connectSession(sessionId: string, phoneNumber?: string): Promise<
   });
   const json = await response.json();
   if (!json.success) throw new Error(json.error?.message ?? "Não foi possível conectar a sessão agora.");
+}
+
+async function disconnectSession(sessionId: string): Promise<void> {
+  const response = await fetch(
+    `/api/integrations/orion/whatsapp/sessions/${encodeURIComponent(sessionId)}/disconnect`,
+    { method: "POST" },
+  );
+  const json = await response.json();
+  if (!json.success) throw new Error(json.error?.message ?? "Não foi possível desconectar a sessão agora.");
 }
 
 async function fetchSessionDetail(sessionId: string): Promise<SessionDetail> {
@@ -532,6 +551,8 @@ export function WhatsAppClient() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [reconnectId, setReconnectId] = React.useState<string | null>(null);
   const reconnectAction = useAsyncAction((id: string) => connectSession(id));
+  const [disconnectId, setDisconnectId] = React.useState<string | null>(null);
+  const disconnectAction = useAsyncAction((id: string) => disconnectSession(id));
   const [historySessionId, setHistorySessionId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -544,6 +565,14 @@ export function WhatsAppClient() {
     setReconnectId(id);
     const result = await reconnectAction.execute(id);
     if (result !== null) setDialogOpen(true);
+  }
+
+  async function handleDisconnect(id: string) {
+    const result = await disconnectAction.execute(id);
+    if (result !== null) {
+      setDisconnectId(null);
+      void loadSessions();
+    }
   }
 
   return (
@@ -613,6 +642,17 @@ export function WhatsAppClient() {
                             Reconectar
                           </Button>
                         )}
+                        {session.status !== "LOGGED_OUT" && session.status !== "BANNED" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => setDisconnectId(session.id)}
+                          >
+                            <LogOut className="size-3.5" />
+                            Desconectar
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -644,6 +684,33 @@ export function WhatsAppClient() {
           if (!nextOpen) setHistorySessionId(null);
         }}
       />
+
+      <AlertDialog open={disconnectId !== null} onOpenChange={(open) => !open && setDisconnectId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desconectar este número?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O bot para de responder por este número até você conectar de novo com um novo QR Code ou código de
+              pareamento.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {disconnectAction.error && <p className="text-destructive text-sm">{disconnectAction.error}</p>}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={disconnectAction.isLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={disconnectAction.isLoading}
+              onClick={(event) => {
+                event.preventDefault();
+                if (disconnectId) void handleDisconnect(disconnectId);
+              }}
+            >
+              {disconnectAction.isLoading ? <Spinner className="size-3.5" /> : <LogOut className="size-3.5" />}
+              Desconectar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
