@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import Link from "next/link";
 
 import {
@@ -77,11 +78,11 @@ function KpiCard({
   return (
     <Card className={highlight ? "gap-2 border-amber-500/40 bg-amber-500/5 py-4" : "gap-2 py-4"}>
       <CardHeader className="flex-row items-center gap-2 space-y-0 px-4">
-        <Icon className={highlight ? "size-4 text-amber-600 dark:text-amber-400" : "text-muted-foreground size-4"} />
+        <Icon className={highlight ? "size-4 text-amber-600 dark:text-amber-400" : "size-4 text-muted-foreground"} />
         <CardDescription>{label}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-0.5 px-4">
-        <span className="text-2xl font-semibold tabular-nums">{value}</span>
+        <span className="font-semibold text-2xl tabular-nums">{value}</span>
         {caption && <span className="text-muted-foreground text-xs">{caption}</span>}
       </CardContent>
     </Card>
@@ -187,7 +188,7 @@ export function PedidosClient() {
   const [period, setPeriod] = React.useState<PeriodKey>("ultimos_30");
 
   React.useEffect(() => {
-    loadPedidos();
+    void loadPedidos();
   }, [loadPedidos]);
 
   const resumo = pedidosAction.data?.resumo ?? null;
@@ -236,7 +237,7 @@ export function PedidosClient() {
     <div className="flex flex-col gap-4 md:gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Pedidos</h1>
+          <h1 className="font-semibold text-2xl tracking-tight">Pedidos</h1>
           <p className="text-muted-foreground text-sm">Acompanhe os pedidos feitos na sua vitrine Kairóss.</p>
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -274,7 +275,7 @@ export function PedidosClient() {
         </div>
       )}
 
-      {!pedidosAction.isLoading && (resumo || totals) && (
+      {!pedidosAction.isLoading && (resumo ?? totals) && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
           <KpiCard icon={ListOrdered} label="Pedidos no período" value={periodOrders?.length ?? 0} />
           {resumo && (
@@ -288,8 +289,12 @@ export function PedidosClient() {
           )}
           {resumo && <KpiCard icon={CheckCircle2} label="Pagos" value={resumo.pagos} caption="todos os tempos" />}
           {resumo && <KpiCard icon={XCircle} label="Falhas" value={resumo.falhas} caption="todos os tempos" />}
-          {resumo && <KpiCard icon={RotateCcw} label="Reembolsados" value={resumo.reembolsados} caption="todos os tempos" />}
-          {resumo && <KpiCard icon={ShoppingCart} label="Abandonados" value={resumo.abandonados} caption="todos os tempos" />}
+          {resumo && (
+            <KpiCard icon={RotateCcw} label="Reembolsados" value={resumo.reembolsados} caption="todos os tempos" />
+          )}
+          {resumo && (
+            <KpiCard icon={ShoppingCart} label="Abandonados" value={resumo.abandonados} caption="todos os tempos" />
+          )}
           {totals && (
             <KpiCard
               icon={ListOrdered}
@@ -376,7 +381,7 @@ export function PedidosClient() {
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <div className="relative flex-1">
-              <Search className="text-muted-foreground absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
+              <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
@@ -385,7 +390,11 @@ export function PedidosClient() {
               />
             </div>
             <div className="flex flex-wrap gap-1.5">
-              <Button variant={statusFilter === null ? "default" : "outline"} size="sm" onClick={() => setStatusFilter(null)}>
+              <Button
+                variant={statusFilter === null ? "default" : "outline"}
+                size="sm"
+                onClick={() => setStatusFilter(null)}
+              >
                 Todos
               </Button>
               {statusOptions.map((status) => (
@@ -422,7 +431,9 @@ export function PedidosClient() {
                         {order.numeroPedido}
                       </Link>
                     </TableCell>
-                    <TableCell className="text-muted-foreground whitespace-nowrap">{formatDate(order.dataCriacao)}</TableCell>
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
+                      {formatDate(order.dataCriacao)}
+                    </TableCell>
                     <TableCell>{order.clienteNome}</TableCell>
                     <TableCell className="max-w-48 truncate" title={order.produtos.join(", ")}>
                       {order.produtos.join(", ") || "—"}
@@ -442,13 +453,15 @@ export function PedidosClient() {
             </Table>
           </div>
           {filteredOrders.length === 0 && (
-            <p className="text-muted-foreground py-8 text-center text-sm">Nenhum pedido encontrado com esses filtros.</p>
+            <p className="py-8 text-center text-muted-foreground text-sm">
+              Nenhum pedido encontrado com esses filtros.
+            </p>
           )}
         </div>
       )}
 
       {!pedidosAction.isLoading && periodOrders && periodOrders.length === 0 && allOrders && allOrders.length > 0 && (
-        <p className="text-muted-foreground py-8 text-center text-sm">Nenhum pedido no período selecionado.</p>
+        <p className="py-8 text-center text-muted-foreground text-sm">Nenhum pedido no período selecionado.</p>
       )}
 
       {!pedidosAction.isLoading && !pedidosAction.error && allOrders && allOrders.length === 0 && (
@@ -464,7 +477,7 @@ export function PedidosClient() {
       )}
 
       {notConnected && (
-        <p className="text-muted-foreground text-center text-sm">
+        <p className="text-center text-muted-foreground text-sm">
           Conecte sua conta Kairóss em Configurações para ver seus pedidos aqui.
         </p>
       )}

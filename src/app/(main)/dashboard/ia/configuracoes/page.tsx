@@ -1,8 +1,11 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+
+import { ArrowLeft } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+
 import { KeysTable } from "./_components/keys-table";
 import { useEnxameKeys } from "./_components/use-enxame-keys";
 
@@ -27,16 +30,25 @@ export default function Page() {
 
       {!configured && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-amber-700 text-sm dark:text-amber-400">
-          O Enxame não está configurado neste ambiente — defina <code className="rounded bg-muted px-1 py-0.5 text-xs">ENXAME_API_KEY</code>{" "}
-          para gerenciar chaves.
+          O Enxame não está configurado neste ambiente — defina{" "}
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">ENXAME_API_KEY</code> para gerenciar chaves.
         </div>
       )}
 
       {error && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-destructive text-sm">{error}</div>
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-destructive text-sm">
+          {error}
+        </div>
       )}
 
-      <KeysTable keys={keys} loading={loading} mutatingId={mutatingId} onAdd={addKey} onToggle={toggleKey} onRemove={removeKey} />
+      <KeysTable
+        keys={keys}
+        loading={loading}
+        mutatingId={mutatingId}
+        onAdd={addKey}
+        onToggle={toggleKey}
+        onRemove={removeKey}
+      />
     </div>
   );
 }

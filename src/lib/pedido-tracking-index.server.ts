@@ -130,7 +130,7 @@ export async function findPedidosByDocumento(input: {
   }
 
   const filtered = input.numeroPedido
-    ? results.filter((pedido) => pedido.numeroPedido.toLowerCase() === input.numeroPedido!.toLowerCase())
+    ? results.filter((pedido) => pedido.numeroPedido.toLowerCase() === input.numeroPedido?.toLowerCase())
     : results;
 
   return filtered.sort((a, b) => (a.dataCriacao < b.dataCriacao ? 1 : -1));

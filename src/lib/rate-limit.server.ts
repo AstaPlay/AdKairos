@@ -34,9 +34,9 @@ export async function checkRateLimit(
 
       const isNewWindow = !envelope || now - envelope.windowStartedAt > windowMs;
       const currentCount = isNewWindow ? 0 : envelope.count;
+      const windowStartedAt = isNewWindow ? now : envelope.windowStartedAt;
 
       if (currentCount >= limit) {
-        const windowStartedAt = envelope!.windowStartedAt;
         return {
           allowed: false,
           remaining: 0,
@@ -46,7 +46,7 @@ export async function checkRateLimit(
 
       transaction.set(ref, {
         count: currentCount + 1,
-        windowStartedAt: isNewWindow ? now : envelope!.windowStartedAt,
+        windowStartedAt,
       } satisfies RateLimitEnvelope);
 
       return { allowed: true, remaining: limit - currentCount - 1, retryAfterMs: 0 };

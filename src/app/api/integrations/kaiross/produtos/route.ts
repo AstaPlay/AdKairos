@@ -1,16 +1,16 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+
 import { firebaseAdminFirestore } from "@/firebase/admin";
+import { getKairoossSession, kairoossCacheKey, readCachedValue, writeCachedValue } from "@/lib/kaiross-proxy.server";
 import { requireAuthenticatedUser } from "@/lib/require-authenticated-user";
-import { getKairoossSession } from "@/lib/kaiross-proxy.server";
-import { readCachedValue, writeCachedValue, kairoossCacheKey } from "@/lib/kaiross-proxy.server";
 import {
-  kairoossRequest,
-  mapKairoossProduct,
   fetchMaisVendidos,
   type KairoossRawProduct,
+  kairoossRequest,
+  mapKairoossProduct,
 } from "@/services/kaiross-integration.service";
-import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
 import type { Product } from "@/types/product.types";
+import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
 
 type MappedProduct = ReturnType<typeof mapKairoossProduct>;
 
@@ -35,12 +35,18 @@ async function fetchCatalogFresh(session: Parameters<typeof kairoossRequest>[1])
  * apenasEstoque=false (default true).
  */
 export async function GET(request: NextRequest) {
-  let user;
+  let user: Awaited<ReturnType<typeof requireAuthenticatedUser>>;
   try {
     user = await requireAuthenticatedUser(request);
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: { code: "auth_check_failed", message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão.") } },
+      {
+        success: false,
+        error: {
+          code: "auth_check_failed",
+          message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão."),
+        },
+      },
       { status: 500 },
     );
   }
@@ -142,7 +148,10 @@ export async function GET(request: NextRequest) {
     const status = (error as { status?: number })?.status;
     if (status === 401) {
       return NextResponse.json(
-        { success: false, error: { code: "kaiross_session_expired", message: "Sessão Kairóss expirada. Conecte novamente." } },
+        {
+          success: false,
+          error: { code: "kaiross_session_expired", message: "Sessão Kairóss expirada. Conecte novamente." },
+        },
         { status: 401 },
       );
     }
@@ -150,7 +159,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: { code: "catalog_fetch_failed", message: toSafeApiErrorMessage(error, "Não foi possível buscar o catálogo agora.") },
+        error: {
+          code: "catalog_fetch_failed",
+          message: toSafeApiErrorMessage(error, "Não foi possível buscar o catálogo agora."),
+        },
       },
       { status: 502 },
     );

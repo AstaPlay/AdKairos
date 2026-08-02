@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import Link from "next/link";
 
 import { ChevronDownIcon, ListFilter, PauseCircle, PlayCircle, Sparkles, Trash2, X } from "lucide-react";
@@ -96,7 +97,7 @@ export function ProductsSection({
     const target = products.find((item) => item.id === highlightId);
     if (target) setDetailProduct(target);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- só na chegada com highlightId; não reabre se o usuário fechar o sheet manualmente
-  }, [highlightId, products.length > 0]);
+  }, [highlightId, products.find]);
 
   // Mantém o sheet sincronizado com a versão mais recente do produto: como
   // `products` é a fonte da verdade (dono do estado em ProdutosClient), sem
@@ -202,9 +203,7 @@ export function ProductsSection({
     }
     setBulkBusy(false);
     if (okCount > 0) {
-      toast.success(
-        pause ? `${okCount} produto(s) pausado(s)` : `${okCount} produto(s) reativado(s)`,
-      );
+      toast.success(pause ? `${okCount} produto(s) pausado(s)` : `${okCount} produto(s) reativado(s)`);
     }
   }
 
@@ -289,7 +288,7 @@ export function ProductsSection({
                   setPageIndex(0);
                 }}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
+                  "flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-medium text-xs transition-all",
                   statusFilter === option
                     ? "border-primary bg-primary text-primary-foreground shadow-sm"
                     : "border-border bg-transparent text-muted-foreground hover:border-primary/40 hover:bg-accent hover:text-foreground",
@@ -310,7 +309,7 @@ export function ProductsSection({
 
           {selectedIds.size > 0 && (
             <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
-              <span className="text-xs font-medium">
+              <span className="font-medium text-xs">
                 {selectedIds.size} selecionado{selectedIds.size > 1 ? "s" : ""}
               </span>
               <div className="ml-auto flex flex-wrap items-center gap-1.5">

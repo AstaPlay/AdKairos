@@ -48,7 +48,8 @@ export function CatalogProductCard({
   const alreadySaved = Boolean(product.localProductId);
   const outOfStock = !product.isActive || (!product.isInternational && product.stock <= 0);
   const isLocked = alreadySaved && !product.localProductId && !onOpenExisting;
-  const salesPct = product.salesCount > 0 && maxSalesCount > 0 ? Math.round((product.salesCount / maxSalesCount) * 100) : 0;
+  const salesPct =
+    product.salesCount > 0 && maxSalesCount > 0 ? Math.round((product.salesCount / maxSalesCount) * 100) : 0;
   const isHot = salesPct >= 50;
   const isTrending = product.salesCount > 0 && !isHot;
   const delayMs = Math.min(index * STAGGER_STEP_MS, MAX_STAGGER_MS);
@@ -77,7 +78,7 @@ export function CatalogProductCard({
       }}
       style={{ animationDelay: `${delayMs}ms` }}
       className={cn(
-        "group animate-in fade-in slide-in-from-bottom-2 gap-3 overflow-hidden py-0 fill-mode-backwards transition-all duration-300",
+        "group fade-in slide-in-from-bottom-2 animate-in gap-3 overflow-hidden fill-mode-backwards py-0 transition-all duration-300",
         "hover:-translate-y-0.5 hover:shadow-lg",
         outOfStock || isLocked ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:ring-1 hover:ring-primary/40",
         alreadySaved && "ring-1 ring-emerald-500/30",
@@ -102,13 +103,19 @@ export function CatalogProductCard({
 
         <div className="absolute top-2 left-2 flex max-w-[calc(100%-2.5rem)] flex-col items-start gap-1">
           {product.isInternational && (
-            <Badge variant="outline" className="gap-1 border-white/20 bg-black/55 text-[10px] text-white backdrop-blur-md">
+            <Badge
+              variant="outline"
+              className="gap-1 border-white/20 bg-black/55 text-[10px] text-white backdrop-blur-md"
+            >
               <Globe className="size-3" strokeWidth={2} />
               Internacional
             </Badge>
           )}
           {outOfStock && (
-            <Badge variant="outline" className="gap-1 border-white/20 bg-black/55 text-[10px] text-white backdrop-blur-md">
+            <Badge
+              variant="outline"
+              className="gap-1 border-white/20 bg-black/55 text-[10px] text-white backdrop-blur-md"
+            >
               <PackageX className="size-3" strokeWidth={2} />
               Sem estoque
             </Badge>
@@ -125,9 +132,11 @@ export function CatalogProductCard({
       <CardContent className="flex flex-col gap-2 pb-4">
         <div className="flex flex-col gap-0.5">
           {product.brand && (
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{product.brand}</span>
+            <span className="font-semibold text-[10px] text-muted-foreground uppercase tracking-wide">
+              {product.brand}
+            </span>
           )}
-          <h3 className="line-clamp-2 min-h-[2.4em] text-sm leading-snug font-medium">{product.name}</h3>
+          <h3 className="line-clamp-2 min-h-[2.4em] font-medium text-sm leading-snug">{product.name}</h3>
           <span className="text-muted-foreground text-xs">{product.category}</span>
         </div>
 
@@ -139,14 +148,19 @@ export function CatalogProductCard({
                 style={{ width: `${Math.max(salesPct, 12)}%` }}
               />
             </div>
-            <span className={cn("shrink-0 text-[10px] font-semibold tracking-wide", isHot ? "text-amber-600" : "text-orange-500")}>
+            <span
+              className={cn(
+                "shrink-0 font-semibold text-[10px] tracking-wide",
+                isHot ? "text-amber-600" : "text-orange-500",
+              )}
+            >
               {isHot ? "QUENTE" : "EM ALTA"}
             </span>
           </div>
         )}
 
         <div className="mt-1 flex items-end justify-between">
-          <span className="text-lg font-semibold text-primary tabular-nums">{currency(product.price)}</span>
+          <span className="font-semibold text-lg text-primary tabular-nums">{currency(product.price)}</span>
           {!product.isInternational && (
             <span className="text-muted-foreground text-xs tabular-nums">{product.stock} un</span>
           )}

@@ -1,10 +1,11 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+
 import { firebaseAdminFirestore } from "@/firebase/admin";
-import { requireAuthenticatedUser } from "@/lib/require-authenticated-user";
-import { mapProductToRow } from "@/lib/map-product-row";
 import { calcularPrecificacao } from "@/lib/kaiross-pricing";
-import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
+import { mapProductToRow } from "@/lib/map-product-row";
+import { requireAuthenticatedUser } from "@/lib/require-authenticated-user";
 import type { Product, ProductStatus } from "@/types/product.types";
+import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
 
 const PRODUCTS_COLLECTION = "products";
 const VALID_STATUSES: ProductStatus[] = ["draft", "active", "paused", "out_of_stock"];
@@ -36,12 +37,18 @@ async function loadOwnedProduct(id: string, ownerId: string) {
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  let user;
+  let user: Awaited<ReturnType<typeof requireAuthenticatedUser>>;
   try {
     user = await requireAuthenticatedUser(request);
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: { code: "auth_check_failed", message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão.") } },
+      {
+        success: false,
+        error: {
+          code: "auth_check_failed",
+          message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão."),
+        },
+      },
       { status: 500 },
     );
   }
@@ -103,7 +110,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (body.clientePagaFrete !== undefined) {
     if (typeof body.clientePagaFrete !== "boolean") {
       return NextResponse.json(
-        { success: false, error: { code: "invalid_cliente_paga_frete", message: "Valor inválido para quem paga o frete." } },
+        {
+          success: false,
+          error: { code: "invalid_cliente_paga_frete", message: "Valor inválido para quem paga o frete." },
+        },
         { status: 400 },
       );
     }
@@ -171,7 +181,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json(
       {
         success: false,
-        error: { code: "update_failed", message: toSafeApiErrorMessage(error, "Não foi possível salvar as alterações agora.") },
+        error: {
+          code: "update_failed",
+          message: toSafeApiErrorMessage(error, "Não foi possível salvar as alterações agora."),
+        },
       },
       { status: 502 },
     );
@@ -186,12 +199,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  let user;
+  let user: Awaited<ReturnType<typeof requireAuthenticatedUser>>;
   try {
     user = await requireAuthenticatedUser(request);
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: { code: "auth_check_failed", message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão.") } },
+      {
+        success: false,
+        error: {
+          code: "auth_check_failed",
+          message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão."),
+        },
+      },
       { status: 500 },
     );
   }
@@ -217,7 +236,10 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     return NextResponse.json(
       {
         success: false,
-        error: { code: "delete_failed", message: toSafeApiErrorMessage(error, "Não foi possível remover o produto agora.") },
+        error: {
+          code: "delete_failed",
+          message: toSafeApiErrorMessage(error, "Não foi possível remover o produto agora."),
+        },
       },
       { status: 502 },
     );

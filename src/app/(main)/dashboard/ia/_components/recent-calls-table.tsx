@@ -13,7 +13,12 @@ const FEATURE_LABELS: Record<string, string> = {
 };
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 interface RecentCallsTableProps {
@@ -57,13 +62,17 @@ export function RecentCallsTable({ items, loading }: RecentCallsTableProps) {
               {recent.map((item, index) => (
                 // biome-ignore lint/suspicious/noArrayIndexKey: log de leitura, sem id estável exposto pela API
                 <TableRow key={`${item.created_at}-${index}`}>
-                  <TableCell className="font-medium">{FEATURE_LABELS[item.feature ?? ""] ?? item.feature ?? "—"}</TableCell>
-                  <TableCell className="capitalize text-muted-foreground">{item.provider}</TableCell>
+                  <TableCell className="font-medium">
+                    {FEATURE_LABELS[item.feature ?? ""] ?? item.feature ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground capitalize">{item.provider}</TableCell>
                   <TableCell className="text-muted-foreground tabular-nums">
                     {item.latency_ms !== null ? `${item.latency_ms}ms` : "—"}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={item.success ? "default" : "destructive"}>{item.success ? "sucesso" : "erro"}</Badge>
+                    <Badge variant={item.success ? "default" : "destructive"}>
+                      {item.success ? "sucesso" : "erro"}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right text-muted-foreground">{formatTime(item.created_at)}</TableCell>
                 </TableRow>

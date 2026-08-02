@@ -1,9 +1,11 @@
 "use client";
 
 import { Activity, AlertTriangle, Key, Zap } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+
 import type { EnxameStatusData } from "./use-enxame-status";
 
 function formatUptime(seconds: number | null): string {
@@ -72,9 +74,13 @@ export function StatusCards({ data, loading }: StatusCardsProps) {
         </CardHeader>
         <CardContent className="flex flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="font-medium text-3xl leading-none tracking-tight">{health?.online ? "Online" : "Offline"}</div>
+            <div className="font-medium text-3xl leading-none tracking-tight">
+              {health?.online ? "Online" : "Offline"}
+            </div>
             <Badge variant={health?.online ? "default" : "destructive"}>
-              <span className={`size-1.5 rounded-full ${health?.online ? "bg-primary-foreground" : "bg-destructive-foreground"}`} />
+              <span
+                className={`size-1.5 rounded-full ${health?.online ? "bg-primary-foreground" : "bg-destructive-foreground"}`}
+              />
               {health?.online ? "ativo" : "indisponível"}
             </Badge>
           </div>

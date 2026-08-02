@@ -1,4 +1,5 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+
 import { z } from "zod";
 
 import { findProductByCheckoutSlug } from "@/lib/checkout-product-index.server";
@@ -8,7 +9,7 @@ import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
 
 function getClientIp(request: NextRequest): string {
   const forwardedFor = request.headers.get("x-forwarded-for");
-  if (forwardedFor) return forwardedFor.split(",")[0]!.trim();
+  if (forwardedFor) return forwardedFor.split(",")[0]?.trim();
   return request.headers.get("x-real-ip") ?? "unknown";
 }
 

@@ -1,8 +1,9 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/require-authenticated-user";
-import { getKairoossSession, readCachedValue, writeCachedValue, kairoossCacheKey } from "@/lib/kaiross-proxy.server";
-import { fetchVendasResumo, fetchPedidosKaiross, type KairoossPedidoRaw } from "@/services/kaiross-integration.service";
+import { type NextRequest, NextResponse } from "next/server";
+
+import { getKairoossSession, kairoossCacheKey, readCachedValue, writeCachedValue } from "@/lib/kaiross-proxy.server";
 import { upsertPedidosIndex } from "@/lib/pedido-tracking-index.server";
+import { requireAuthenticatedUser } from "@/lib/require-authenticated-user";
+import { fetchPedidosKaiross, fetchVendasResumo, type KairoossPedidoRaw } from "@/services/kaiross-integration.service";
 import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
 
 /**
@@ -43,12 +44,18 @@ function mapPedido(raw: KairoossPedidoRaw) {
  * isso claro, em vez de fingir que já são "receita confirmada".
  */
 export async function GET(request: NextRequest) {
-  let user;
+  let user: Awaited<ReturnType<typeof requireAuthenticatedUser>>;
   try {
     user = await requireAuthenticatedUser(request);
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: { code: "auth_check_failed", message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão.") } },
+      {
+        success: false,
+        error: {
+          code: "auth_check_failed",
+          message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão."),
+        },
+      },
       { status: 500 },
     );
   }
@@ -94,7 +101,9 @@ export async function GET(request: NextRequest) {
       })(),
     ]);
 
-    const orders = rawPedidos ? rawPedidos.map(mapPedido).sort((a, b) => (a.dataCriacao < b.dataCriacao ? 1 : -1)) : null;
+    const orders = rawPedidos
+      ? rawPedidos.map(mapPedido).sort((a, b) => (a.dataCriacao < b.dataCriacao ? 1 : -1))
+      : null;
 
     return NextResponse.json({
       success: true,
@@ -104,7 +113,10 @@ export async function GET(request: NextRequest) {
     const status = (error as { status?: number })?.status;
     if (status === 401) {
       return NextResponse.json(
-        { success: false, error: { code: "kaiross_session_expired", message: "Sessão Kairóss expirada. Conecte novamente." } },
+        {
+          success: false,
+          error: { code: "kaiross_session_expired", message: "Sessão Kairóss expirada. Conecte novamente." },
+        },
         { status: 401 },
       );
     }
@@ -112,7 +124,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: { code: "pedidos_fetch_failed", message: toSafeApiErrorMessage(error, "Não foi possível buscar seus pedidos agora.") },
+        error: {
+          code: "pedidos_fetch_failed",
+          message: toSafeApiErrorMessage(error, "Não foi possível buscar seus pedidos agora."),
+        },
       },
       { status: 502 },
     );

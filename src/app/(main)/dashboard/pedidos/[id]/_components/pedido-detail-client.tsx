@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import Link from "next/link";
 
 import {
@@ -176,7 +177,7 @@ export function PedidoDetailClient({ pedidoId }: { pedidoId: string }) {
   const [copied, setCopied] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    execute(pedidoId);
+    void execute(pedidoId);
   }, [execute, pedidoId]);
 
   const pedido = detailAction.data;
@@ -222,7 +223,7 @@ export function PedidoDetailClient({ pedidoId }: { pedidoId: string }) {
         <>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h1 className="font-mono text-2xl font-semibold tracking-tight">{pedido.numeroPedido}</h1>
+              <h1 className="font-mono font-semibold text-2xl tracking-tight">{pedido.numeroPedido}</h1>
               <p className="text-muted-foreground text-sm">Realizado em {formatDate(pedido.dataCriacao)}</p>
             </div>
             <Badge variant={pedido.pagamento.dataPagamento ? "default" : "outline"} className="text-xs">
@@ -254,7 +255,9 @@ export function PedidoDetailClient({ pedidoId }: { pedidoId: string }) {
                           {index < 3 && <span className="mt-1 h-full w-px flex-1 bg-border" />}
                         </div>
                         <div className="pb-4">
-                          <p className={step.done ? "text-sm font-medium" : "text-sm font-medium text-muted-foreground"}>
+                          <p
+                            className={step.done ? "font-medium text-sm" : "font-medium text-muted-foreground text-sm"}
+                          >
                             {step.label}
                           </p>
                           {step.detail && <p className="text-muted-foreground text-xs">{step.detail}</p>}
@@ -281,18 +284,20 @@ export function PedidoDetailClient({ pedidoId }: { pedidoId: string }) {
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{item.nome}</p>
+                        <p className="truncate font-medium text-sm">{item.nome}</p>
                         <p className="text-muted-foreground text-xs">
                           {item.quantidade}× {money(item.valorUnitario)}
                           {item.codigo ? ` · SKU ${item.codigo}` : ""}
                         </p>
                       </div>
-                      <p className="shrink-0 font-mono text-sm font-semibold tabular-nums">{money(item.valorTotal)}</p>
+                      <p className="shrink-0 font-mono font-semibold text-sm tabular-nums">{money(item.valorTotal)}</p>
                     </div>
                   ))}
                   <div className="flex items-center justify-between border-t pt-3">
-                    <span className="text-sm font-semibold">Total cobrado</span>
-                    <span className="font-mono text-base font-semibold tabular-nums">{money(pedido.valores.bruto)}</span>
+                    <span className="font-semibold text-sm">Total cobrado</span>
+                    <span className="font-mono font-semibold text-base tabular-nums">
+                      {money(pedido.valores.bruto)}
+                    </span>
                   </div>
                 </CardContent>
               </Card>
@@ -311,37 +316,45 @@ export function PedidoDetailClient({ pedidoId }: { pedidoId: string }) {
                   {pedido.cliente.documento ? (
                     <Link
                       href={`/dashboard/clientes/${encodeURIComponent(pedido.cliente.documento)}`}
-                      className="text-sm font-medium hover:underline"
+                      className="font-medium text-sm hover:underline"
                     >
                       {pedido.cliente.nome}
                     </Link>
                   ) : (
-                    <p className="text-sm font-medium">{pedido.cliente.nome}</p>
+                    <p className="font-medium text-sm">{pedido.cliente.nome}</p>
                   )}
                   {pedido.cliente.email && (
                     <button
                       type="button"
                       onClick={() => copyValue("email", pedido.cliente.email!)}
-                      className="flex items-center gap-2 text-left text-xs text-muted-foreground hover:text-foreground"
+                      className="flex items-center gap-2 text-left text-muted-foreground text-xs hover:text-foreground"
                     >
                       <Mail className="size-3.5 shrink-0" />
                       <span className="truncate">{pedido.cliente.email}</span>
-                      {copied === "email" ? <Check className="size-3 shrink-0" /> : <Copy className="size-3 shrink-0" />}
+                      {copied === "email" ? (
+                        <Check className="size-3 shrink-0" />
+                      ) : (
+                        <Copy className="size-3 shrink-0" />
+                      )}
                     </button>
                   )}
                   {pedido.cliente.telefone && (
                     <button
                       type="button"
                       onClick={() => copyValue("telefone", pedido.cliente.telefone!)}
-                      className="flex items-center gap-2 text-left text-xs text-muted-foreground hover:text-foreground"
+                      className="flex items-center gap-2 text-left text-muted-foreground text-xs hover:text-foreground"
                     >
                       <Phone className="size-3.5 shrink-0" />
                       <span>{pedido.cliente.telefone}</span>
-                      {copied === "telefone" ? <Check className="size-3 shrink-0" /> : <Copy className="size-3 shrink-0" />}
+                      {copied === "telefone" ? (
+                        <Check className="size-3 shrink-0" />
+                      ) : (
+                        <Copy className="size-3 shrink-0" />
+                      )}
                     </button>
                   )}
                   {pedido.cliente.endereco?.logradouro && (
-                    <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-start gap-2 text-muted-foreground text-xs">
                       <MapPin className="mt-0.5 size-3.5 shrink-0" />
                       <span>
                         {pedido.cliente.endereco.logradouro}
@@ -396,9 +409,9 @@ export function PedidoDetailClient({ pedidoId }: { pedidoId: string }) {
                         <span className="tabular-nums">−{money(pedido.valores.taxa!)}</span>
                       </div>
                     )}
-                    <div className="flex justify-between border-t pt-1.5 text-sm font-semibold">
+                    <div className="flex justify-between border-t pt-1.5 font-semibold text-sm">
                       <span>Sua margem líquida</span>
-                      <span className="tabular-nums text-emerald-600 dark:text-emerald-400">
+                      <span className="text-emerald-600 tabular-nums dark:text-emerald-400">
                         {money(pedido.valores.liquidoVendedor)}
                       </span>
                     </div>

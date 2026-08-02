@@ -153,7 +153,16 @@ export function ProdutosClient() {
       })
       .catch(() => setSyncFailed(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- roda uma vez ao montar; load é estável (useCallback sem deps)
-  }, []);
+  }, [
+    // Carrega o que já está salvo imediatamente — não faz sentido o usuário
+    // esperar a chamada de rede à Kairóss (pode levar vários segundos) para
+    // ver produtos que já estão no Firestore prontos para exibir. A
+    // sincronização roda em paralelo, em segundo plano, e só then dispara um
+    // segundo load() quando (e se) trouxer algo novo — mesmo padrão já usado
+    // em catalog-section.tsx. Best-effort: falha de rede/desconexão não deve
+    // impedir a tela de mostrar o que já existe localmente.
+    load,
+  ]);
 
   // Atualiza o texto "há X min" a cada 30s sem precisar de novo fetch.
   React.useEffect(() => {
@@ -266,7 +275,7 @@ export function ProdutosClient() {
         {/* Glow ambiente sutil no acento primário do tema — reforça que esta é
             a página "central" do catálogo sem depender de cor fixa hardcoded. */}
         <div
-          className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full bg-primary/10 blur-3xl"
+          className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-primary/10 blur-3xl"
           aria-hidden
         />
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

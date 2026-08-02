@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import Link from "next/link";
 
 import { AlertTriangle, ArrowLeft, Mail, MapPin, Phone, RefreshCw, ShoppingBag, User } from "lucide-react";
@@ -70,7 +71,7 @@ export function ClienteDetailClient({ documento }: { documento: string }) {
   const { execute } = clienteAction;
 
   React.useEffect(() => {
-    execute(documento);
+    void execute(documento);
   }, [execute, documento]);
 
   const cliente = clienteAction.data;
@@ -140,19 +141,19 @@ export function ClienteDetailClient({ documento }: { documento: string }) {
 
               <div className="mt-2 grid grid-cols-2 gap-3 border-t pt-3">
                 <div>
-                  <p className="text-muted-foreground text-[11px]">Total de pedidos</p>
-                  <p className="text-lg font-semibold tabular-nums">{cliente.resumo.totalPedidos}</p>
+                  <p className="text-[11px] text-muted-foreground">Total de pedidos</p>
+                  <p className="font-semibold text-lg tabular-nums">{cliente.resumo.totalPedidos}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground text-[11px]">Pagos</p>
-                  <p className="text-lg font-semibold tabular-nums">{cliente.resumo.pedidosPagos}</p>
+                  <p className="text-[11px] text-muted-foreground">Pagos</p>
+                  <p className="font-semibold text-lg tabular-nums">{cliente.resumo.pedidosPagos}</p>
                 </div>
                 <div className="col-span-2">
-                  <p className="text-muted-foreground text-[11px]">Total gasto</p>
-                  <p className="font-mono text-lg font-semibold tabular-nums">{money(cliente.resumo.totalGasto)}</p>
+                  <p className="text-[11px] text-muted-foreground">Total gasto</p>
+                  <p className="font-mono font-semibold text-lg tabular-nums">{money(cliente.resumo.totalGasto)}</p>
                 </div>
                 <div className="col-span-2">
-                  <p className="text-muted-foreground text-[11px]">Cliente desde</p>
+                  <p className="text-[11px] text-muted-foreground">Cliente desde</p>
                   <p className="text-sm">{formatDate(cliente.resumo.primeiraCompra)}</p>
                 </div>
               </div>
@@ -186,7 +187,9 @@ export function ClienteDetailClient({ documento }: { documento: string }) {
                             {pedido.numeroPedido}
                           </Link>
                         </TableCell>
-                        <TableCell className="text-muted-foreground whitespace-nowrap">{formatDate(pedido.dataCriacao)}</TableCell>
+                        <TableCell className="whitespace-nowrap text-muted-foreground">
+                          {formatDate(pedido.dataCriacao)}
+                        </TableCell>
                         <TableCell className="max-w-56 truncate" title={pedido.itens.join(", ")}>
                           {pedido.itens.join(", ") || "—"}
                         </TableCell>

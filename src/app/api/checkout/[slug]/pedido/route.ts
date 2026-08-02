@@ -1,4 +1,5 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+
 import { z } from "zod";
 
 import { findProductByCheckoutSlug } from "@/lib/checkout-product-index.server";
@@ -10,16 +11,25 @@ import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
 
 function getClientIp(request: NextRequest): string {
   const forwardedFor = request.headers.get("x-forwarded-for");
-  if (forwardedFor) return forwardedFor.split(",")[0]!.trim();
+  if (forwardedFor) return forwardedFor.split(",")[0]?.trim();
   return request.headers.get("x-real-ip") ?? "unknown";
 }
 
 const clienteSchema = z.object({
   nome: z.string().trim().min(3).max(120),
   email: z.string().trim().email(),
-  documento: z.string().trim().transform((value) => value.replace(/\D/g, "")),
-  telefone: z.string().trim().transform((value) => value.replace(/\D/g, "")),
-  cep: z.string().trim().transform((value) => value.replace(/\D/g, "")),
+  documento: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/\D/g, "")),
+  telefone: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/\D/g, "")),
+  cep: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/\D/g, "")),
   endereco: z.string().trim().min(1).max(160),
   numero: z.string().trim().min(1).max(20),
   bairro: z.string().trim().min(1).max(80),
@@ -77,7 +87,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   if (parsed.data.formaPagamento === "CREDITO" && !parsed.data.cartaoToken) {
     return NextResponse.json(
-      { success: false, error: { code: "invalid_input", message: "Dados do cartão não foram processados corretamente." } },
+      {
+        success: false,
+        error: { code: "invalid_input", message: "Dados do cartão não foram processados corretamente." },
+      },
       { status: 400 },
     );
   }
@@ -100,7 +113,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     if (resultado.status === "recusado") {
       return NextResponse.json(
-        { success: false, error: { code: "payment_declined", message: resultado.mensagem ?? "Pagamento não aprovado." } },
+        {
+          success: false,
+          error: { code: "payment_declined", message: resultado.mensagem ?? "Pagamento não aprovado." },
+        },
         { status: 402 },
       );
     }

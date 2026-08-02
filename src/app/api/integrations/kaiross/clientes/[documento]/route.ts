@@ -1,6 +1,7 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+
+import { getKairoossSession, kairoossCacheKey, readCachedValue, writeCachedValue } from "@/lib/kaiross-proxy.server";
 import { requireAuthenticatedUser } from "@/lib/require-authenticated-user";
-import { getKairoossSession, readCachedValue, writeCachedValue, kairoossCacheKey } from "@/lib/kaiross-proxy.server";
 import { fetchPedidosKaiross, type KairoossPedidoRaw } from "@/services/kaiross-integration.service";
 import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
 
@@ -15,17 +16,26 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { documento } = await params;
   const documentoDigits = decodeURIComponent(documento).replace(/\D/g, "");
 
-  let user;
+  let user: Awaited<ReturnType<typeof requireAuthenticatedUser>>;
   try {
     user = await requireAuthenticatedUser(request);
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: { code: "auth_check_failed", message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão.") } },
+      {
+        success: false,
+        error: {
+          code: "auth_check_failed",
+          message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão."),
+        },
+      },
       { status: 500 },
     );
   }
   if (!user) {
-    return NextResponse.json({ success: false, error: { code: "unauthenticated", message: "Sessão inválida." } }, { status: 401 });
+    return NextResponse.json(
+      { success: false, error: { code: "unauthenticated", message: "Sessão inválida." } },
+      { status: 401 },
+    );
   }
 
   const session = await getKairoossSession(user.uid);
@@ -45,7 +55,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
     if (!rawPedidos) {
       return NextResponse.json(
-        { success: false, error: { code: "pedidos_fetch_failed", message: "Não foi possível buscar seus pedidos agora." } },
+        {
+          success: false,
+          error: { code: "pedidos_fetch_failed", message: "Não foi possível buscar seus pedidos agora." },
+        },
         { status: 502 },
       );
     }
@@ -55,12 +68,17 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     );
 
     if (pedidosDoCliente.length === 0) {
-      return NextResponse.json({ success: false, error: { code: "not_found", message: "Cliente não encontrado." } }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: { code: "not_found", message: "Cliente não encontrado." } },
+        { status: 404 },
+      );
     }
 
     const primeiro = pedidosDoCliente[0]!;
     const totalGasto = pedidosDoCliente.reduce((acc, pedido) => acc + pedido.valorBruto, 0);
-    const pedidosPagos = pedidosDoCliente.filter((pedido) => pedido.statusPagamento?.toUpperCase() !== "PENDENTE").length;
+    const pedidosPagos = pedidosDoCliente.filter(
+      (pedido) => pedido.statusPagamento?.toUpperCase() !== "PENDENTE",
+    ).length;
 
     return NextResponse.json({
       success: true,
@@ -102,12 +120,21 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const status = (error as { status?: number })?.status;
     if (status === 401) {
       return NextResponse.json(
-        { success: false, error: { code: "kaiross_session_expired", message: "Sessão Kairóss expirada. Conecte novamente." } },
+        {
+          success: false,
+          error: { code: "kaiross_session_expired", message: "Sessão Kairóss expirada. Conecte novamente." },
+        },
         { status: 401 },
       );
     }
     return NextResponse.json(
-      { success: false, error: { code: "cliente_fetch_failed", message: toSafeApiErrorMessage(error, "Não foi possível buscar este cliente agora.") } },
+      {
+        success: false,
+        error: {
+          code: "cliente_fetch_failed",
+          message: toSafeApiErrorMessage(error, "Não foi possível buscar este cliente agora."),
+        },
+      },
       { status: 502 },
     );
   }

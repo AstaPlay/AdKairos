@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+
 import type { EnxamePoolStats, EnxameUsageItem } from "@/lib/enxame-client";
 
 export interface EnxameStatusData {
@@ -43,8 +44,8 @@ export function useEnxameStatus(): UseEnxameStatusResult {
   }, []);
 
   useEffect(() => {
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 30_000);
+    void fetchStatus();
+    const interval = setInterval(() => void fetchStatus(), 30_000);
     return () => clearInterval(interval);
   }, [fetchStatus]);
 

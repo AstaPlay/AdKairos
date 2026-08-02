@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
 import { Suspense } from "react";
+
+import type { Metadata } from "next";
 
 import { Skeleton } from "@/components/ui/skeleton";
 

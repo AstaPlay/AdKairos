@@ -1,8 +1,9 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+
+import { callEnxame, isEnxameConfigured } from "@/lib/enxame-client";
+import { KAIROSS_FEES } from "@/lib/kaiross-pricing";
 import { requireAuthenticatedUser } from "@/lib/require-authenticated-user";
 import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
-import { KAIROSS_FEES } from "@/lib/kaiross-pricing";
-import { callEnxame, isEnxameConfigured } from "@/lib/enxame-client";
 
 interface SugestaoPrecoBody {
   nome: string;
@@ -76,12 +77,18 @@ function parsePesquisaResponse(text: string): PesquisaResult | null {
  * Qualquer falha do Enxame cai de volta no cálculo puro por fórmula.
  */
 export async function POST(request: NextRequest) {
-  let user;
+  let user: Awaited<ReturnType<typeof requireAuthenticatedUser>>;
   try {
     user = await requireAuthenticatedUser(request);
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: { code: "auth_check_failed", message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão.") } },
+      {
+        success: false,
+        error: {
+          code: "auth_check_failed",
+          message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão."),
+        },
+      },
       { status: 500 },
     );
   }

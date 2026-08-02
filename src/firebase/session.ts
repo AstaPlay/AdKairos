@@ -1,6 +1,8 @@
 import "server-only";
-import { firebaseAdminAuth } from "@/firebase/admin";
+
 import type { DecodedIdToken } from "firebase-admin/auth";
+
+import { firebaseAdminAuth } from "@/firebase/admin";
 
 /** Valida um cookie de sessão do Firebase — retorna null (nunca lança) se inválido/expirado. */
 export async function verifySessionCookie(sessionCookie: string): Promise<DecodedIdToken | null> {

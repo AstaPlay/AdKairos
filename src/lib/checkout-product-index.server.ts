@@ -70,6 +70,6 @@ export async function findProductByCheckoutSlug(slug: string): Promise<CheckoutP
 
   if (snapshot.empty) return null;
 
-  const data = snapshot.docs[0]!.data() as Product;
+  const data = snapshot.docs[0]?.data() as Product;
   return toInternal(data);
 }

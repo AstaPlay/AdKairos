@@ -1,15 +1,16 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+
 import { firebaseAdminFirestore } from "@/firebase/admin";
-import { requireAuthenticatedUser } from "@/lib/require-authenticated-user";
 import { getKairoossSession } from "@/lib/kaiross-proxy.server";
+import { requireAuthenticatedUser } from "@/lib/require-authenticated-user";
 import {
   fetchMeusSellerProdutos,
+  type KairoossRawProduct,
   kairoossRequest,
   mapKairoossProduct,
-  type KairoossRawProduct,
 } from "@/services/kaiross-integration.service";
-import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
 import type { Product } from "@/types/product.types";
+import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
 
 const PRODUCTS_COLLECTION = "products";
 const CHECKOUT_BASE_URL = "https://pay.kaiross.com.br";
@@ -32,7 +33,9 @@ interface SyncSummary {
 async function commitInBatches(ops: Array<(batch: FirebaseFirestore.WriteBatch) => void>): Promise<void> {
   for (let i = 0; i < ops.length; i += FIRESTORE_BATCH_LIMIT) {
     const batch = firebaseAdminFirestore.batch();
-    ops.slice(i, i + FIRESTORE_BATCH_LIMIT).forEach((op) => op(batch));
+    ops.slice(i, i + FIRESTORE_BATCH_LIMIT).forEach((op) => {
+      op(batch);
+    });
     await batch.commit();
   }
 }
@@ -61,12 +64,18 @@ async function commitInBatches(ops: Array<(batch: FirebaseFirestore.WriteBatch) 
  * productId contra a lista remota antes de decidir o que fazer com eles.
  */
 export async function POST(request: NextRequest) {
-  let user;
+  let user: Awaited<ReturnType<typeof requireAuthenticatedUser>>;
   try {
     user = await requireAuthenticatedUser(request);
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: { code: "auth_check_failed", message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão.") } },
+      {
+        success: false,
+        error: {
+          code: "auth_check_failed",
+          message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão."),
+        },
+      },
       { status: 500 },
     );
   }

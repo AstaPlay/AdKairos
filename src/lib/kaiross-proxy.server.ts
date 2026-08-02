@@ -62,9 +62,7 @@ export async function writeCachedValue<T>(key: string, data: T): Promise<void> {
 
 export async function invalidateCachedValues(keys: string[]): Promise<void> {
   try {
-    await Promise.all(
-      keys.map((key) => firebaseAdminFirestore.collection(CACHE_COLLECTION).doc(key).delete()),
-    );
+    await Promise.all(keys.map((key) => firebaseAdminFirestore.collection(CACHE_COLLECTION).doc(key).delete()));
   } catch {
     // Idem — pior caso é servir um dado com até 10 min de atraso.
   }

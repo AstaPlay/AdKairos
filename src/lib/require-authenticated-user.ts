@@ -1,6 +1,8 @@
 import "server-only";
 import type { NextRequest } from "next/server";
+
 import type { DecodedIdToken } from "firebase-admin/auth";
+
 import { verifySessionCookie } from "@/firebase/session";
 import { SESSION_COOKIE_NAME } from "@/lib/cookies";
 

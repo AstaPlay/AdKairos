@@ -1,7 +1,8 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+
+import { callEnxame, isEnxameConfigured } from "@/lib/enxame-client";
 import { requireAuthenticatedUser } from "@/lib/require-authenticated-user";
 import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
-import { callEnxame, isEnxameConfigured } from "@/lib/enxame-client";
 
 interface GerarKeywordsBody {
   operation: string;
@@ -93,12 +94,18 @@ function heuristicKeywords(context: { name: string; description?: string; catego
  * a rota nunca falha por causa do Enxame.
  */
 export async function POST(request: NextRequest) {
-  let user;
+  let user: Awaited<ReturnType<typeof requireAuthenticatedUser>>;
   try {
     user = await requireAuthenticatedUser(request);
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: { code: "auth_check_failed", message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão.") } },
+      {
+        success: false,
+        error: {
+          code: "auth_check_failed",
+          message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão."),
+        },
+      },
       { status: 500 },
     );
   }

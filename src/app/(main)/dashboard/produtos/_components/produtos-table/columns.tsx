@@ -112,7 +112,9 @@ export const productsColumns: ColumnDef<ProductRow>[] = [
   {
     accessorKey: "createdAt",
     header: () => <div className="text-right">Criado em</div>,
-    cell: ({ row }) => <div className="text-right text-muted-foreground text-sm">{formatDate(row.original.createdAt)}</div>,
+    cell: ({ row }) => (
+      <div className="text-right text-muted-foreground text-sm">{formatDate(row.original.createdAt)}</div>
+    ),
   },
 ];
 

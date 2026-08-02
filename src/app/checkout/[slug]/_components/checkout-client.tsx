@@ -25,7 +25,6 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
-
 import type { CheckoutProductPublic } from "@/lib/checkout-product-index.server";
 
 // ---------------------------------------------------------------------------
@@ -60,7 +59,10 @@ function maskCPF(value: string): string {
     .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
 }
 function maskCEP(value: string): string {
-  return value.replace(/\D/g, "").slice(0, 8).replace(/(\d{5})(\d)/, "$1-$2");
+  return value
+    .replace(/\D/g, "")
+    .slice(0, 8)
+    .replace(/(\d{5})(\d)/, "$1-$2");
 }
 function maskPhone(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 11);
@@ -156,13 +158,16 @@ const INITIAL_FORM: FormState = {
 
 type Stage = "idle" | "carrinho" | "tokenizando" | "processando" | "aprovado" | "recusado";
 
-async function criarCarrinho(slug: string, input: {
-  quantidade: number;
-  nome: string;
-  email: string;
-  documento: string;
-  telefone: string;
-}) {
+async function criarCarrinho(
+  slug: string,
+  input: {
+    quantidade: number;
+    nome: string;
+    email: string;
+    documento: string;
+    telefone: string;
+  },
+) {
   const response = await fetch(`/api/checkout/${slug}/carrinho`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -349,9 +354,18 @@ export function CheckoutClient({ produto, slug }: { produto: CheckoutProductPubl
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setTouched({
-      email: true, confirmEmail: true, nome: true, cpf: true, cep: true,
-      numero: true, telefone: true, envio: true,
-      cartaoNumero: true, cartaoValidade: true, cartaoCvv: true, cartaoNome: true,
+      email: true,
+      confirmEmail: true,
+      nome: true,
+      cpf: true,
+      cep: true,
+      numero: true,
+      telefone: true,
+      envio: true,
+      cartaoNumero: true,
+      cartaoValidade: true,
+      cartaoCvv: true,
+      cartaoNome: true,
     });
     if (!validate()) {
       requestAnimationFrame(() => errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }));
@@ -430,8 +444,8 @@ export function CheckoutClient({ produto, slug }: { produto: CheckoutProductPubl
       <div className="flex flex-col gap-6">
         <div className="flex flex-col items-center gap-2 text-center">
           <div className="flex items-center gap-2">
-            <Lock className="text-primary size-4" />
-            <span className="text-xs font-bold tracking-wide">CHECKOUT SEGURO</span>
+            <Lock className="size-4 text-primary" />
+            <span className="font-bold text-xs tracking-wide">CHECKOUT SEGURO</span>
           </div>
           <Badge variant="secondary" className="gap-1">
             <ShieldCheck data-icon="inline-start" className="size-3" />
@@ -449,18 +463,24 @@ export function CheckoutClient({ produto, slug }: { produto: CheckoutProductPubl
                 <span
                   className={
                     done
-                      ? "flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold"
+                      ? "flex size-6 shrink-0 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground text-xs"
                       : active
-                        ? "border-primary text-primary flex size-6 shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold"
-                        : "text-muted-foreground flex size-6 shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold"
+                        ? "flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-primary font-semibold text-primary text-xs"
+                        : "flex size-6 shrink-0 items-center justify-center rounded-full border-2 font-semibold text-muted-foreground text-xs"
                   }
                 >
                   {done ? <Check className="size-3.5" /> : idx}
                 </span>
-                <span className={done || active ? "hidden text-sm font-medium sm:inline" : "text-muted-foreground hidden text-sm sm:inline"}>
+                <span
+                  className={
+                    done || active
+                      ? "hidden font-medium text-sm sm:inline"
+                      : "hidden text-muted-foreground text-sm sm:inline"
+                  }
+                >
                   {label}
                 </span>
-                {idx < 3 && <Separator className={done ? "bg-primary flex-1" : "flex-1"} />}
+                {idx < 3 && <Separator className={done ? "flex-1 bg-primary" : "flex-1"} />}
               </div>
             );
           })}
@@ -480,7 +500,7 @@ export function CheckoutClient({ produto, slug }: { produto: CheckoutProductPubl
         <form onSubmit={handleSubmit} className="flex flex-col gap-8">
           {/* Contato */}
           <section className="flex flex-col gap-4">
-            <h2 className="text-base font-semibold">Contato</h2>
+            <h2 className="font-semibold text-base">Contato</h2>
             <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="email">E-mail</Label>
@@ -513,7 +533,7 @@ export function CheckoutClient({ produto, slug }: { produto: CheckoutProductPubl
 
           {/* Entrega */}
           <section className="flex flex-col gap-4">
-            <h2 className="text-base font-semibold">Entrega</h2>
+            <h2 className="font-semibold text-base">Entrega</h2>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="nome">Nome completo</Label>
               <Input
@@ -572,7 +592,7 @@ export function CheckoutClient({ produto, slug }: { produto: CheckoutProductPubl
             </div>
 
             {addressReady && (
-              <div className="bg-muted/40 grid grid-cols-1 gap-3.5 rounded-lg border p-3.5 sm:grid-cols-[1fr_120px]">
+              <div className="grid grid-cols-1 gap-3.5 rounded-lg border bg-muted/40 p-3.5 sm:grid-cols-[1fr_120px]">
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="endereco">Endereço</Label>
                   <Input id="endereco" value={form.endereco} onChange={(e) => set("endereco", e.target.value)} />
@@ -609,18 +629,18 @@ export function CheckoutClient({ produto, slug }: { produto: CheckoutProductPubl
                       htmlFor={`envio-${opt.id}`}
                       className={
                         form.envio === opt.id
-                          ? "border-primary bg-primary/5 flex cursor-pointer items-center justify-between rounded-lg border px-4 py-3"
-                          : "hover:border-muted-foreground/30 flex cursor-pointer items-center justify-between rounded-lg border px-4 py-3"
+                          ? "flex cursor-pointer items-center justify-between rounded-lg border border-primary bg-primary/5 px-4 py-3"
+                          : "flex cursor-pointer items-center justify-between rounded-lg border px-4 py-3 hover:border-muted-foreground/30"
                       }
                     >
                       <span className="flex items-center gap-3">
                         <RadioGroupItem id={`envio-${opt.id}`} value={opt.id} />
                         <span>
-                          <span className="block text-sm font-medium">{opt.label}</span>
-                          <span className="text-muted-foreground block text-xs">{opt.days}</span>
+                          <span className="block font-medium text-sm">{opt.label}</span>
+                          <span className="block text-muted-foreground text-xs">{opt.days}</span>
                         </span>
                       </span>
-                      <span className="text-sm font-semibold">{formatBRL(opt.price)}</span>
+                      <span className="font-semibold text-sm">{formatBRL(opt.price)}</span>
                     </label>
                   ))}
                 </RadioGroup>
@@ -632,7 +652,7 @@ export function CheckoutClient({ produto, slug }: { produto: CheckoutProductPubl
           {/* Pagamento */}
           <section className="flex flex-col gap-4">
             <div>
-              <h2 className="text-base font-semibold">Pagamento</h2>
+              <h2 className="font-semibold text-base">Pagamento</h2>
               <p className="text-muted-foreground text-xs">Todas as transações são seguras e criptografadas.</p>
             </div>
 
@@ -641,14 +661,17 @@ export function CheckoutClient({ produto, slug }: { produto: CheckoutProductPubl
               onValueChange={(v) => set("metodo", v as FormState["metodo"])}
               className="gap-3"
             >
-              <div className={form.metodo === "credito" ? "border-primary rounded-lg border" : "rounded-lg border"}>
-                <label htmlFor="metodo-credito" className="flex cursor-pointer items-center justify-between px-4 py-3.5">
+              <div className={form.metodo === "credito" ? "rounded-lg border border-primary" : "rounded-lg border"}>
+                <label
+                  htmlFor="metodo-credito"
+                  className="flex cursor-pointer items-center justify-between px-4 py-3.5"
+                >
                   <span className="flex items-center gap-3">
                     <RadioGroupItem id="metodo-credito" value="credito" />
-                    <CreditCard className="text-muted-foreground size-4" />
-                    <span className="text-sm font-medium">Cartão de crédito</span>
+                    <CreditCard className="size-4 text-muted-foreground" />
+                    <span className="font-medium text-sm">Cartão de crédito</span>
                   </span>
-                  <span className="text-muted-foreground text-[10px] font-bold">VISA MASTERCARD +2</span>
+                  <span className="font-bold text-[10px] text-muted-foreground">VISA MASTERCARD +2</span>
                 </label>
 
                 {form.metodo === "credito" && (
@@ -667,7 +690,7 @@ export function CheckoutClient({ produto, slug }: { produto: CheckoutProductPubl
                           aria-invalid={Boolean(touched.cartaoNumero && errors.cartaoNumero)}
                         />
                         {detectBrand(form.cartaoNumero) && (
-                          <span className="text-muted-foreground absolute top-1/2 right-3 -translate-y-1/2 text-[11px] font-bold">
+                          <span className="absolute top-1/2 right-3 -translate-y-1/2 font-bold text-[11px] text-muted-foreground">
                             {detectBrand(form.cartaoNumero)}
                           </span>
                         )}
@@ -739,14 +762,14 @@ export function CheckoutClient({ produto, slug }: { produto: CheckoutProductPubl
                 htmlFor="metodo-pix"
                 className={
                   form.metodo === "pix"
-                    ? "border-primary flex cursor-pointer items-center justify-between rounded-lg border px-4 py-3.5"
+                    ? "flex cursor-pointer items-center justify-between rounded-lg border border-primary px-4 py-3.5"
                     : "flex cursor-pointer items-center justify-between rounded-lg border px-4 py-3.5"
                 }
               >
                 <span className="flex items-center gap-3">
                   <RadioGroupItem id="metodo-pix" value="pix" />
-                  <QrCode className="text-muted-foreground size-4" />
-                  <span className="text-sm font-medium">PIX</span>
+                  <QrCode className="size-4 text-muted-foreground" />
+                  <span className="font-medium text-sm">PIX</span>
                   <Badge variant="secondary" className="text-emerald-700 dark:text-emerald-400">
                     Aprovação imediata
                   </Badge>
@@ -767,16 +790,23 @@ export function CheckoutClient({ produto, slug }: { produto: CheckoutProductPubl
                 <>Pagar {formatBRL(total)}</>
               )}
             </Button>
-            <p className="text-muted-foreground flex items-center justify-center gap-1.5 text-xs">
+            <p className="flex items-center justify-center gap-1.5 text-muted-foreground text-xs">
               <Lock className="size-3.5" /> Ambiente protegido · Compra 100% segura
             </p>
           </div>
 
           <Separator />
-          <div className="text-muted-foreground flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
-            <a href="#" className="hover:text-foreground">Termos de serviço</a>
-            <a href="#" className="hover:text-foreground">Política de privacidade</a>
-            <a href="#" className="hover:text-foreground">Contato</a>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-muted-foreground text-xs">
+            {/* TODO: apontar para URLs reais quando as páginas existirem */}
+            <button type="button" className="hover:text-foreground">
+              Termos de serviço
+            </button>
+            <button type="button" className="hover:text-foreground">
+              Política de privacidade
+            </button>
+            <button type="button" className="hover:text-foreground">
+              Contato
+            </button>
           </div>
         </form>
       </div>
@@ -791,9 +821,9 @@ export function CheckoutClient({ produto, slug }: { produto: CheckoutProductPubl
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={produto.images[0]} alt="" className="size-16 rounded-lg border object-cover" />
                 ) : (
-                  <div className="bg-muted flex size-16 items-center justify-center rounded-lg border" />
+                  <div className="flex size-16 items-center justify-center rounded-lg border bg-muted" />
                 )}
-                <span className="bg-foreground text-background absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full text-[10.5px] font-semibold">
+                <span className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-foreground font-semibold text-[10.5px] text-background">
                   {qty}
                 </span>
               </div>
@@ -805,7 +835,7 @@ export function CheckoutClient({ produto, slug }: { produto: CheckoutProductPubl
                       {formatBRL(produto.compareAtPrice)}
                     </span>
                   )}
-                  <span className="text-sm font-semibold">{formatBRL(produto.price)}</span>
+                  <span className="font-semibold text-sm">{formatBRL(produto.price)}</span>
                 </div>
                 <div className="mt-2 flex w-fit items-center rounded-lg border">
                   <Button
@@ -818,7 +848,7 @@ export function CheckoutClient({ produto, slug }: { produto: CheckoutProductPubl
                   >
                     <Minus className="size-3.5" />
                   </Button>
-                  <span className="w-6 text-center text-sm font-medium">{qty}</span>
+                  <span className="w-6 text-center font-medium text-sm">{qty}</span>
                   <Button
                     type="button"
                     variant="ghost"
@@ -835,11 +865,11 @@ export function CheckoutClient({ produto, slug }: { produto: CheckoutProductPubl
             <Separator />
 
             <div className="flex flex-col gap-2 text-sm">
-              <div className="text-muted-foreground flex justify-between">
+              <div className="flex justify-between text-muted-foreground">
                 <span>Subtotal</span>
                 <span className="text-foreground">{formatBRL(subtotal)}</span>
               </div>
-              <div className="text-muted-foreground flex justify-between">
+              <div className="flex justify-between text-muted-foreground">
                 <span>Frete</span>
                 <span className={form.envio ? "text-foreground" : undefined}>
                   {form.envio ? formatBRL(freight) : "Informe seu endereço"}
@@ -850,10 +880,10 @@ export function CheckoutClient({ produto, slug }: { produto: CheckoutProductPubl
             <Separator />
 
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold">Total</span>
+              <span className="font-semibold text-sm">Total</span>
               <span className="flex items-baseline gap-1.5">
-                <span className="text-muted-foreground text-[11px]">BRL</span>
-                <span className="text-lg font-bold">{formatBRL(total)}</span>
+                <span className="text-[11px] text-muted-foreground">BRL</span>
+                <span className="font-bold text-lg">{formatBRL(total)}</span>
               </span>
             </div>
 
@@ -863,8 +893,8 @@ export function CheckoutClient({ produto, slug }: { produto: CheckoutProductPubl
               </Badge>
             )}
 
-            <div className="bg-muted/50 flex items-center gap-2 rounded-lg px-3.5 py-3 text-sm">
-              <Truck className="text-muted-foreground size-4 shrink-0" />
+            <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3.5 py-3 text-sm">
+              <Truck className="size-4 shrink-0 text-muted-foreground" />
               Em estoque, pronto para envio!
             </div>
           </CardContent>
@@ -873,28 +903,28 @@ export function CheckoutClient({ produto, slug }: { produto: CheckoutProductPubl
         <Card>
           <CardContent className="flex flex-col gap-4">
             <div className="flex gap-3">
-              <ShieldCheck className="text-primary size-4 shrink-0" />
+              <ShieldCheck className="size-4 shrink-0 text-primary" />
               <div>
-                <p className="text-sm font-medium">Pagamento seguro</p>
-                <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
+                <p className="font-medium text-sm">Pagamento seguro</p>
+                <p className="mt-0.5 text-muted-foreground text-xs leading-relaxed">
                   Criptografia SSL de ponta a ponta. Seus dados de cartão nunca ficam armazenados aqui.
                 </p>
               </div>
             </div>
             <div className="flex gap-3">
-              <RotateCcw className="text-primary size-4 shrink-0" />
+              <RotateCcw className="size-4 shrink-0 text-primary" />
               <div>
-                <p className="text-sm font-medium">7 dias de garantia</p>
-                <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
+                <p className="font-medium text-sm">7 dias de garantia</p>
+                <p className="mt-0.5 text-muted-foreground text-xs leading-relaxed">
                   Não ficou satisfeito? Devolução total em até 7 dias após o recebimento.
                 </p>
               </div>
             </div>
             <div className="flex gap-3">
-              <Truck className="text-primary size-4 shrink-0" />
+              <Truck className="size-4 shrink-0 text-primary" />
               <div>
-                <p className="text-sm font-medium">Entrega em todo o Brasil</p>
-                <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
+                <p className="font-medium text-sm">Entrega em todo o Brasil</p>
+                <p className="mt-0.5 text-muted-foreground text-xs leading-relaxed">
                   Informe o CEP para ver o prazo estimado da sua região.
                 </p>
               </div>
@@ -905,7 +935,7 @@ export function CheckoutClient({ produto, slug }: { produto: CheckoutProductPubl
         <Card>
           <CardContent className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold">Avaliações de clientes</span>
+              <span className="font-semibold text-sm">Avaliações de clientes</span>
               <span className="flex items-center gap-0.5">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="size-3.5 fill-emerald-600 text-emerald-600" />
@@ -915,7 +945,7 @@ export function CheckoutClient({ produto, slug }: { produto: CheckoutProductPubl
             {REVIEWS.map((r, i) => (
               <div key={r.name} className={i > 0 ? "flex flex-col gap-1 border-t pt-3" : "flex flex-col gap-1"}>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium">{r.name}</span>
+                  <span className="font-medium text-xs">{r.name}</span>
                   <span className="flex gap-0.5">
                     {[...Array(r.stars)].map((_, j) => (
                       <Star key={j} className="size-3 fill-amber-400 text-amber-400" />
@@ -944,13 +974,13 @@ function SuccessScreen({ orderId, total, email }: { orderId: string | null; tota
             <Check className="size-8 text-emerald-600" />
           </div>
           <div>
-            <h1 className="text-xl font-bold">Pagamento aprovado!</h1>
-            <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+            <h1 className="font-bold text-xl">Pagamento aprovado!</h1>
+            <p className="mt-2 text-muted-foreground text-sm leading-relaxed">
               Recebemos seu pedido e já estamos preparando tudo para o envio.
             </p>
           </div>
 
-          <div className="bg-muted/50 flex w-full flex-col gap-2.5 rounded-lg p-4 text-left text-sm">
+          <div className="flex w-full flex-col gap-2.5 rounded-lg bg-muted/50 p-4 text-left text-sm">
             {orderId && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Número do pedido</span>
@@ -962,12 +992,12 @@ function SuccessScreen({ orderId, total, email }: { orderId: string | null; tota
               <span className="font-semibold">{formatBRL(total)}</span>
             </div>
             <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground shrink-0">Confirmação enviada para</span>
+              <span className="shrink-0 text-muted-foreground">Confirmação enviada para</span>
               <span className="truncate font-medium">{email}</span>
             </div>
           </div>
 
-          <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
+          <p className="flex items-center gap-1.5 text-muted-foreground text-xs">
             <ShieldCheck className="size-3.5 text-emerald-600" />
             Compra protegida · Processado com segurança
           </p>

@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 
+import { useRouter } from "next/navigation";
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -135,7 +136,7 @@ export function LoginForm() {
       </FieldGroup>
 
       {submitError && (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="text-destructive text-sm">
           {submitError}
         </p>
       )}

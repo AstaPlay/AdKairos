@@ -52,7 +52,7 @@ export function CatalogConnectCard({
       <Card className="mx-auto w-full max-w-md">
         <CardContent className="flex flex-col items-center justify-center gap-3 py-14 text-center">
           <Loader2 className="size-6 animate-spin text-primary" strokeWidth={2} />
-          <p className="text-sm text-muted-foreground">Verificando sua conexão com a Kairóss...</p>
+          <p className="text-muted-foreground text-sm">Verificando sua conexão com a Kairóss...</p>
         </CardContent>
       </Card>
     );
@@ -61,7 +61,7 @@ export function CatalogConnectCard({
   return (
     <Card className="mx-auto w-full max-w-md">
       <CardHeader>
-        <div className="flex items-center gap-1.5 font-mono text-[10px] font-semibold text-primary uppercase tracking-[0.08em]">
+        <div className="flex items-center gap-1.5 font-mono font-semibold text-[10px] text-primary uppercase tracking-[0.08em]">
           <Sparkles className="size-3" strokeWidth={2} />
           Integração
         </div>
@@ -72,7 +72,7 @@ export function CatalogConnectCard({
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex items-center gap-2.5 rounded-lg border border-primary/15 bg-primary/[0.05] px-3.5 py-2.5">
             <ShieldCheck className="size-4 shrink-0 text-primary" strokeWidth={1.75} />
-            <p className="text-[11.5px] leading-4 text-muted-foreground">
+            <p className="text-[11.5px] text-muted-foreground leading-4">
               Conexão segura — sua senha não fica salva no painel, só o acesso já autenticado.
             </p>
           </div>

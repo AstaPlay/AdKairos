@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAsyncAction } from "@/hooks/use-async-action";
 
-import { CatalogAffiliateSheet, type AfiliarResult } from "./catalog-affiliate-sheet";
+import { type AfiliarResult, CatalogAffiliateSheet } from "./catalog-affiliate-sheet";
 import { CatalogCategorySheet, type CategoryNode } from "./catalog-category-sheet";
 import { CatalogConnectCard, type ConnectionStatus } from "./catalog-connect-card";
 import { CatalogProductCard, type KairoossCatalogProduct } from "./catalog-product-card";
@@ -121,7 +121,9 @@ export function CatalogSection() {
   // disponível para o usuário forçar isso manualmente.
   React.useEffect(() => {
     if (!status?.connected) return;
-    fetch("/api/integrations/kaiross/sincronizar", { method: "POST" }).catch(() => {});
+    fetch("/api/integrations/kaiross/sincronizar", { method: "POST" }).catch(() => {
+      // Falha silenciosa intencional — best-effort, ver comentário acima.
+    });
   }, [status?.connected]);
 
   React.useEffect(() => {
@@ -132,11 +134,11 @@ export function CatalogSection() {
 
   React.useEffect(() => {
     setCategoriaSelecionada(null);
-  }, [tipo]);
+  }, []);
 
   React.useEffect(() => {
     if (!status?.connected) return;
-    catalogAction.execute({
+    void catalogAction.execute({
       busca: buscaDebounced,
       maisVendidos: apenasMaisVendidos,
       tipo,
@@ -144,10 +146,18 @@ export function CatalogSection() {
       apenasEstoque,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch controlado por busca/filtro/tipo/categoria/estoque
-  }, [status?.connected, buscaDebounced, apenasMaisVendidos, tipo, categoriaSelecionada, apenasEstoque]);
+  }, [
+    status?.connected,
+    buscaDebounced,
+    apenasMaisVendidos,
+    tipo,
+    categoriaSelecionada,
+    apenasEstoque,
+    catalogAction.execute,
+  ]);
 
   function refetchCatalog() {
-    catalogAction.execute({
+    void catalogAction.execute({
       busca: buscaDebounced,
       maisVendidos: apenasMaisVendidos,
       tipo,
@@ -173,7 +183,7 @@ export function CatalogSection() {
     }
   }
 
-  function handleProductSaved(result: AfiliarResult) {
+  function handleProductSaved(_result: AfiliarResult) {
     if (selectedProduct) {
       setSavedProductIds((current) => new Set(current).add(selectedProduct.kairoossProductId));
     }
@@ -213,7 +223,7 @@ export function CatalogSection() {
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card px-4 py-2.5">
-        <div className="flex items-center gap-1.5 font-mono text-[10px] font-semibold text-primary uppercase tracking-[0.08em]">
+        <div className="flex items-center gap-1.5 font-mono font-semibold text-[10px] text-primary uppercase tracking-[0.08em]">
           <ShieldCheck className="size-3" strokeWidth={2} />
           Conectado {status.email ? `· ${status.email}` : ""}
         </div>
@@ -230,7 +240,7 @@ export function CatalogSection() {
       </div>
 
       {syncSummary && (
-        <Alert className="animate-in fade-in">
+        <Alert className="fade-in animate-in">
           <AlertDescription>
             Sincronização concluída: {syncSummary.updated} atualizado(s), {syncSummary.addedFromKaiross} adicionado(s),{" "}
             {syncSummary.removedRemotely} removido(s).
@@ -264,13 +274,21 @@ export function CatalogSection() {
           </Tabs>
 
           {tipo === "nacional" && (
-            <Button variant={apenasMaisVendidos ? "default" : "outline"} size="sm" onClick={() => setApenasMaisVendidos((v) => !v)}>
+            <Button
+              variant={apenasMaisVendidos ? "default" : "outline"}
+              size="sm"
+              onClick={() => setApenasMaisVendidos((v) => !v)}
+            >
               <Flame data-icon="inline-start" />
               Mais vendidos
             </Button>
           )}
 
-          <Button variant={categoriaSelecionada ? "default" : "outline"} size="sm" onClick={() => setCategoriesOpen(true)}>
+          <Button
+            variant={categoriaSelecionada ? "default" : "outline"}
+            size="sm"
+            onClick={() => setCategoriesOpen(true)}
+          >
             <LayoutGrid data-icon="inline-start" />
             {categoriaSelecionada ? categoriaSelecionada.name : "Categorias"}
           </Button>
@@ -282,8 +300,15 @@ export function CatalogSection() {
             </Button>
           )}
 
-          <label className="flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm select-none">
-            <Checkbox checked={apenasEstoque} onCheckedChange={(checked) => setApenasEstoque(checked === true)} />
+          <label
+            htmlFor="catalog-apenas-estoque"
+            className="flex select-none items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm"
+          >
+            <Checkbox
+              id="catalog-apenas-estoque"
+              checked={apenasEstoque}
+              onCheckedChange={(checked) => setApenasEstoque(checked === true)}
+            />
             Em estoque
           </label>
         </div>

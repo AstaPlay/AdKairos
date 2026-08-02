@@ -1,14 +1,10 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+
 import { SESSION_COOKIE_NAME } from "@/lib/cookies";
 
 const PRIVATE_ROUTE_PREFIX = "/dashboard";
 
-const AUTH_ROUTES = [
-  "/auth/v1/login",
-  "/auth/v1/register",
-  "/auth/v2/login",
-  "/auth/v2/register",
-];
+const AUTH_ROUTES = ["/auth/v1/login", "/auth/v1/register", "/auth/v2/login", "/auth/v2/register"];
 
 const DEFAULT_REDIRECT_AFTER_LOGIN = "/dashboard/default";
 

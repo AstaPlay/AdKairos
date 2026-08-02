@@ -184,7 +184,7 @@ export function CatalogCategorySheet({ open, tipo, selected, onSelect, onClose }
             <button
               type="button"
               onClick={() => selectAndClose(null)}
-              className="animate-in fade-in flex items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/[0.08] px-3.5 py-2.5 text-left text-[12.5px] font-semibold text-primary transition-colors duration-200 hover:bg-primary/[0.12]"
+              className="fade-in flex animate-in items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/[0.08] px-3.5 py-2.5 text-left font-semibold text-[12.5px] text-primary transition-colors duration-200 hover:bg-primary/[0.12]"
             >
               Limpar filtro atual ({selected.name})
             </button>
@@ -224,7 +224,11 @@ export function CatalogCategorySheet({ open, tipo, selected, onSelect, onClose }
                 const hasChildren = node.children.length > 0;
 
                 return (
-                  <Collapsible key={node.fullPath} open={isNodeExpanded} onOpenChange={() => toggleExpanded(node.fullPath)}>
+                  <Collapsible
+                    key={node.fullPath}
+                    open={isNodeExpanded}
+                    onOpenChange={() => toggleExpanded(node.fullPath)}
+                  >
                     <div
                       className={cn(
                         "flex items-center gap-1 rounded-lg transition-colors duration-150",
@@ -250,17 +254,17 @@ export function CatalogCategorySheet({ open, tipo, selected, onSelect, onClose }
                       <button
                         type="button"
                         onClick={() => selectAndClose(node)}
-                        className="flex flex-1 items-center justify-between gap-2 py-2.5 pr-3.5 text-left text-sm font-medium"
+                        className="flex flex-1 items-center justify-between gap-2 py-2.5 pr-3.5 text-left font-medium text-sm"
                       >
                         <span className="flex items-center gap-1.5 truncate">
                           <span className="truncate">{node.name}</span>
                           {hasChildren && (
-                            <span className="shrink-0 text-[11px] font-normal text-muted-foreground">
+                            <span className="shrink-0 font-normal text-[11px] text-muted-foreground">
                               ({node.children.length} subcategoria{node.children.length === 1 ? "" : "s"})
                             </span>
                           )}
                           {!hasChildren && node.productCount > 0 && (
-                            <span className="shrink-0 text-[11px] font-normal text-muted-foreground">
+                            <span className="shrink-0 font-normal text-[11px] text-muted-foreground">
                               ({node.productCount})
                             </span>
                           )}

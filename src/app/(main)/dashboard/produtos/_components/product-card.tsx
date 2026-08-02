@@ -91,11 +91,11 @@ export function ProductCard({
             manterem contraste mesmo sobre fotos claras. */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/50 to-transparent" />
 
-        <div className="absolute left-2 top-2 z-10 flex flex-col items-start gap-1">
+        <div className="absolute top-2 left-2 z-10 flex flex-col items-start gap-1">
           <Badge
             variant="outline"
             className={cn(
-              "text-[10px] font-semibold shadow-sm ring-1 ring-black/10",
+              "font-semibold text-[10px] shadow-sm ring-1 ring-black/10",
               STATUS_BADGE_CLASS[product.status],
             )}
           >
@@ -104,7 +104,7 @@ export function ProductCard({
         </div>
 
         {product.source === "kaiross" && (
-          <div className="absolute right-2 top-2 z-10">
+          <div className="absolute top-2 right-2 z-10">
             <Badge
               variant="outline"
               className="gap-1 border-white/20 bg-black/55 text-[10px] text-white backdrop-blur-md"
@@ -115,6 +115,8 @@ export function ProductCard({
           </div>
         )}
 
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: div é só uma ilha de stopPropagation para não disparar o onClick de navegação do card pai; o controle acessível real é o input dentro dela */}
+        {/* biome-ignore lint/a11y/useKeyWithClickEvents: stopPropagation não é uma ação — não há equivalente de teclado a oferecer */}
         <div className="absolute bottom-2 left-2" onClick={(event) => event.stopPropagation()}>
           <input
             type="checkbox"
@@ -125,8 +127,10 @@ export function ProductCard({
           />
         </div>
 
-        {(onCopyCheckout || onTogglePause || onRemove) && (
-          <div className="absolute bottom-2 right-2" onClick={(event) => event.stopPropagation()}>
+        {(onCopyCheckout ?? onTogglePause ?? onRemove) && (
+          // biome-ignore lint/a11y/noStaticElementInteractions: mesma ilha de stopPropagation; o controle acessível real é o button (DropdownMenuTrigger) dentro dela
+          // biome-ignore lint/a11y/useKeyWithClickEvents: stopPropagation não é uma ação — não há equivalente de teclado a oferecer
+          <div className="absolute right-2 bottom-2" onClick={(event) => event.stopPropagation()}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -177,19 +181,19 @@ export function ProductCard({
       <CardContent className="flex flex-col gap-2 pb-4">
         <div className="flex flex-col gap-0.5">
           {product.brand && (
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <span className="font-semibold text-[10px] text-muted-foreground uppercase tracking-wide">
               {product.brand}
             </span>
           )}
-          <h3 className="line-clamp-2 min-h-[2.4em] text-sm font-medium leading-snug">{product.name}</h3>
+          <h3 className="line-clamp-2 min-h-[2.4em] font-medium text-sm leading-snug">{product.name}</h3>
           <span className="text-muted-foreground text-xs">{product.category}</span>
         </div>
 
         <div className="mt-1 flex items-end justify-between">
-          <span className="text-lg font-semibold tabular-nums text-primary">{currency(product.price)}</span>
+          <span className="font-semibold text-lg text-primary tabular-nums">{currency(product.price)}</span>
           <span
             className={cn(
-              "rounded-full px-1.5 py-0.5 text-xs font-medium tabular-nums",
+              "rounded-full px-1.5 py-0.5 font-medium text-xs tabular-nums",
               product.stock === 0
                 ? "bg-destructive/10 text-destructive"
                 : product.stock <= 5

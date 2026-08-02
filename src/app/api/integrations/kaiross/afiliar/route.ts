@@ -1,10 +1,11 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+
 import { firebaseAdminFirestore } from "@/firebase/admin";
+import { getKairoossSession, invalidateCachedValues, kairoossCacheKey } from "@/lib/kaiross-proxy.server";
 import { requireAuthenticatedUser } from "@/lib/require-authenticated-user";
-import { getKairoossSession, kairoossCacheKey, invalidateCachedValues } from "@/lib/kaiross-proxy.server";
-import { kairoossRequest, fetchMeusSellerProdutos } from "@/services/kaiross-integration.service";
-import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
+import { fetchMeusSellerProdutos, kairoossRequest } from "@/services/kaiross-integration.service";
 import type { Product } from "@/types/product.types";
+import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
 
 const PRODUCTS_COLLECTION = "products";
 const CHECKOUT_BASE_URL = "https://pay.kaiross.com.br";
@@ -40,12 +41,18 @@ interface KairoossSellerProdutoResponse {
  * aviso, nunca deixamos o produto "afiliado só na Kairóss e órfão aqui".
  */
 export async function POST(request: NextRequest) {
-  let user;
+  let user: Awaited<ReturnType<typeof requireAuthenticatedUser>>;
   try {
     user = await requireAuthenticatedUser(request);
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: { code: "auth_check_failed", message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão.") } },
+      {
+        success: false,
+        error: {
+          code: "auth_check_failed",
+          message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão."),
+        },
+      },
       { status: 500 },
     );
   }
@@ -128,7 +135,8 @@ export async function POST(request: NextRequest) {
       ).toLowerCase();
       const looksLikeConflict =
         afiliarResponse.status === 409 ||
-        (errorText.includes("já") && (errorText.includes("afiliad") || errorText.includes("existe") || errorText.includes("cadastrad")));
+        (errorText.includes("já") &&
+          (errorText.includes("afiliad") || errorText.includes("existe") || errorText.includes("cadastrad")));
 
       if (looksLikeConflict) {
         const remoteAffiliations = await fetchMeusSellerProdutos(session).catch(() => null);
@@ -235,10 +243,7 @@ export async function POST(request: NextRequest) {
     // Invalida o cache de catálogo/ranking — a próxima leitura do modal deve
     // já refletir que este produto está afiliado (evita mostrar "Salvar" de
     // novo em um item que acabou de ser confirmado).
-    await invalidateCachedValues([
-      kairoossCacheKey(user.uid, "catalogo"),
-      kairoossCacheKey(user.uid, "ranking"),
-    ]);
+    await invalidateCachedValues([kairoossCacheKey(user.uid, "catalogo"), kairoossCacheKey(user.uid, "ranking")]);
 
     return NextResponse.json({
       success: true,

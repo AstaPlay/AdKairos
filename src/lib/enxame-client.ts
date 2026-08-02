@@ -95,7 +95,10 @@ export function isEnxameConfigured(): boolean {
 // sem quebrar a página inteira.
 // ---------------------------------------------------------------------------
 
-async function enxameGet<T>(path: string, timeoutMs = 8_000): Promise<{ ok: true; data: T } | { ok: false; error: string }> {
+async function enxameGet<T>(
+  path: string,
+  timeoutMs = 8_000,
+): Promise<{ ok: true; data: T } | { ok: false; error: string }> {
   if (!ENXAME_API_KEY) {
     return { ok: false, error: "ENXAME_API_KEY não configurada." };
   }
@@ -124,7 +127,11 @@ export interface EnxameHealth {
 }
 
 /** GET /health — não exige auth no Enxame, mas mandamos o header mesmo assim por consistência. */
-export async function getEnxameHealth(): Promise<{ online: boolean; uptimeSeconds: number | null; error: string | null }> {
+export async function getEnxameHealth(): Promise<{
+  online: boolean;
+  uptimeSeconds: number | null;
+  error: string | null;
+}> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 6_000);
   try {
@@ -189,7 +196,11 @@ interface EnxameActionResult {
   error?: string;
 }
 
-async function enxameMutate(path: string, method: "POST" | "PATCH" | "DELETE", body?: unknown): Promise<EnxameActionResult> {
+async function enxameMutate(
+  path: string,
+  method: "POST" | "PATCH" | "DELETE",
+  body?: unknown,
+): Promise<EnxameActionResult> {
   if (!ENXAME_API_KEY) {
     return { ok: false, error: "ENXAME_API_KEY não configurada." };
   }

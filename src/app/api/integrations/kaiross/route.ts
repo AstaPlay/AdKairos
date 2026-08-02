@@ -1,20 +1,33 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+
 import { firebaseAdminFirestore } from "@/firebase/admin";
-import { requireAuthenticatedUser } from "@/lib/require-authenticated-user";
-import { getKairoossSession, INTEGRATIONS_COLLECTION, invalidateCachedValues, kairoossCacheKey, type KairoossIntegrationDoc } from "@/lib/kaiross-proxy.server";
+import {
+  getKairoossSession,
+  INTEGRATIONS_COLLECTION,
+  invalidateCachedValues,
+  type KairoossIntegrationDoc,
+  kairoossCacheKey,
+} from "@/lib/kaiross-proxy.server";
 import { checkRateLimit } from "@/lib/rate-limit.server";
-import { kairoossRequest, extractCookies } from "@/services/kaiross-integration.service";
+import { requireAuthenticatedUser } from "@/lib/require-authenticated-user";
+import { extractCookies, kairoossRequest } from "@/services/kaiross-integration.service";
 import { getErrorMessage } from "@/utils/get-error-message";
 import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
 
 /** GET ?acao=status — informa se o usuário tem uma integração Kairóss ativa (nunca retorna o token em si). */
 export async function GET(request: NextRequest) {
-  let user;
+  let user: Awaited<ReturnType<typeof requireAuthenticatedUser>>;
   try {
     user = await requireAuthenticatedUser(request);
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: { code: "auth_check_failed", message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão.") } },
+      {
+        success: false,
+        error: {
+          code: "auth_check_failed",
+          message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão."),
+        },
+      },
       { status: 500 },
     );
   }
@@ -40,7 +53,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: { code: "status_check_failed", message: toSafeApiErrorMessage(error, "Não foi possível verificar a integração.") },
+        error: {
+          code: "status_check_failed",
+          message: toSafeApiErrorMessage(error, "Não foi possível verificar a integração."),
+        },
       },
       { status: 502 },
     );
@@ -59,12 +75,18 @@ interface KairoossLoginBody {
  * logout: apaga o documento de integração e o cache de importação pendente.
  */
 export async function POST(request: NextRequest) {
-  let user;
+  let user: Awaited<ReturnType<typeof requireAuthenticatedUser>>;
   try {
     user = await requireAuthenticatedUser(request);
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: { code: "auth_check_failed", message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão.") } },
+      {
+        success: false,
+        error: {
+          code: "auth_check_failed",
+          message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão."),
+        },
+      },
       { status: 500 },
     );
   }
@@ -80,17 +102,17 @@ export async function POST(request: NextRequest) {
   if (body.acao === "logout") {
     try {
       await firebaseAdminFirestore.collection(INTEGRATIONS_COLLECTION).doc(user.uid).delete();
-      await invalidateCachedValues([
-        kairoossCacheKey(user.uid, "catalogo"),
-        kairoossCacheKey(user.uid, "ranking"),
-      ]);
+      await invalidateCachedValues([kairoossCacheKey(user.uid, "catalogo"), kairoossCacheKey(user.uid, "ranking")]);
 
       return NextResponse.json({ success: true, data: null });
     } catch (error) {
       return NextResponse.json(
         {
           success: false,
-          error: { code: "logout_failed", message: toSafeApiErrorMessage(error, "Não foi possível desconectar agora.") },
+          error: {
+            code: "logout_failed",
+            message: toSafeApiErrorMessage(error, "Não foi possível desconectar agora."),
+          },
         },
         { status: 502 },
       );
@@ -125,10 +147,14 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const response = await kairoossRequest("/auth/login", {}, {
-        method: "POST",
-        body: JSON.stringify({ email: body.email, senha: body.senha }),
-      });
+      const response = await kairoossRequest(
+        "/auth/login",
+        {},
+        {
+          method: "POST",
+          body: JSON.stringify({ email: body.email, senha: body.senha }),
+        },
+      );
 
       if (!response.ok) {
         return NextResponse.json(
@@ -143,7 +169,10 @@ export async function POST(request: NextRequest) {
 
       if (!cookies && !token) {
         return NextResponse.json(
-          { success: false, error: { code: "kaiross_login_failed", message: "Não foi possível estabelecer a sessão com a Kairóss." } },
+          {
+            success: false,
+            error: { code: "kaiross_login_failed", message: "Não foi possível estabelecer a sessão com a Kairóss." },
+          },
           { status: 401 },
         );
       }
@@ -156,10 +185,7 @@ export async function POST(request: NextRequest) {
         ...(token ? { token } : {}),
       };
 
-      await firebaseAdminFirestore
-        .collection(INTEGRATIONS_COLLECTION)
-        .doc(user.uid)
-        .set(integrationDoc);
+      await firebaseAdminFirestore.collection(INTEGRATIONS_COLLECTION).doc(user.uid).set(integrationDoc);
 
       return NextResponse.json({ success: true, data: { connected: true } });
     } catch (error) {

@@ -1,9 +1,10 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+
 import { firebaseAdminFirestore } from "@/firebase/admin";
-import { requireAuthenticatedUser } from "@/lib/require-authenticated-user";
 import { mapProductToRow } from "@/lib/map-product-row";
-import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
+import { requireAuthenticatedUser } from "@/lib/require-authenticated-user";
 import type { Product } from "@/types/product.types";
+import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
 
 const PRODUCTS_COLLECTION = "products";
 
@@ -18,12 +19,18 @@ const PRODUCTS_COLLECTION = "products";
  * e o volume por usuário aqui é pequeno o bastante pra isso ser seguro.
  */
 export async function GET(request: NextRequest) {
-  let user;
+  let user: Awaited<ReturnType<typeof requireAuthenticatedUser>>;
   try {
     user = await requireAuthenticatedUser(request);
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: { code: "auth_check_failed", message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão.") } },
+      {
+        success: false,
+        error: {
+          code: "auth_check_failed",
+          message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão."),
+        },
+      },
       { status: 500 },
     );
   }
@@ -52,7 +59,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: { code: "products_fetch_failed", message: toSafeApiErrorMessage(error, "Não foi possível buscar seus produtos agora.") },
+        error: {
+          code: "products_fetch_failed",
+          message: toSafeApiErrorMessage(error, "Não foi possível buscar seus produtos agora."),
+        },
       },
       { status: 502 },
     );

@@ -61,21 +61,21 @@ function StatusStep({ label, done }: { label: string; done: boolean }) {
       >
         {done ? <Check className="size-3.5" /> : <CircleDashed className="size-3.5" />}
       </span>
-      <span className={done ? "text-sm font-medium" : "text-sm text-muted-foreground"}>{label}</span>
+      <span className={done ? "font-medium text-sm" : "text-muted-foreground text-sm"}>{label}</span>
     </div>
   );
 }
 
 function ResultCard({ pedido }: { pedido: RastreioResultado }) {
   const pago = pedido.statusPagamento?.toUpperCase() !== "PENDENTE";
-  const enviado = Boolean(pedido.dataEnvio || pedido.codigoRastreio);
+  const enviado = Boolean(pedido.dataEnvio ?? pedido.codigoRastreio);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between gap-2 font-mono text-base">
           <span>{pedido.numeroPedido}</span>
-          <span className="text-muted-foreground text-xs font-normal">{formatDate(pedido.dataCriacao)}</span>
+          <span className="font-normal text-muted-foreground text-xs">{formatDate(pedido.dataCriacao)}</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -94,7 +94,7 @@ function ResultCard({ pedido }: { pedido: RastreioResultado }) {
           <div className="flex items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2.5">
             <Truck className="size-4 shrink-0 text-muted-foreground" />
             <div className="min-w-0">
-              <p className="text-muted-foreground text-[11px]">Código de rastreio</p>
+              <p className="text-[11px] text-muted-foreground">Código de rastreio</p>
               <p className="truncate font-mono text-sm">{pedido.codigoRastreio}</p>
             </div>
           </div>
@@ -148,10 +148,10 @@ export default function RastreioPage() {
   return (
     <div className="mx-auto flex min-h-svh max-w-xl flex-col gap-6 px-4 py-10 sm:py-16">
       <div className="flex flex-col items-center gap-2 text-center">
-        <div className="bg-primary/10 flex size-11 items-center justify-center rounded-full">
-          <Package className="text-primary size-5" />
+        <div className="flex size-11 items-center justify-center rounded-full bg-primary/10">
+          <Package className="size-5 text-primary" />
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight">Rastrear pedido</h1>
+        <h1 className="font-semibold text-2xl tracking-tight">Rastrear pedido</h1>
         <p className="text-muted-foreground text-sm">Informe seu CPF para ver o status da sua compra.</p>
       </div>
 
@@ -172,7 +172,7 @@ export default function RastreioPage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="numero-pedido">
-                Número do pedido <span className="text-muted-foreground font-normal">(opcional)</span>
+                Número do pedido <span className="font-normal text-muted-foreground">(opcional)</span>
               </Label>
               <Input
                 id="numero-pedido"
@@ -194,9 +194,9 @@ export default function RastreioPage() {
               {isLoading ? "Buscando..." : "Rastrear"}
             </Button>
 
-            <p className="text-muted-foreground flex items-start gap-1.5 text-xs">
-              <ShieldCheck className="mt-0.5 size-3.5 shrink-0" />
-              O CPF é usado apenas para localizar os seus pedidos e nunca é compartilhado.
+            <p className="flex items-start gap-1.5 text-muted-foreground text-xs">
+              <ShieldCheck className="mt-0.5 size-3.5 shrink-0" />O CPF é usado apenas para localizar os seus pedidos e
+              nunca é compartilhado.
             </p>
           </form>
         </CardContent>

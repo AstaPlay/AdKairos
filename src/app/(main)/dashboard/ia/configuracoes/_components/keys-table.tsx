@@ -1,6 +1,7 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,17 +20,24 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { EnxameKeyView } from "@/lib/enxame-client";
+
 import { AddKeyDialog } from "./add-key-dialog";
 
-const STATE_LABEL: Record<EnxameKeyView["state"], { label: string; variant: "default" | "secondary" | "destructive" }> = {
-  available: { label: "Disponível", variant: "default" },
-  cooldown: { label: "Em cooldown", variant: "secondary" },
-  disabled: { label: "Desativada", variant: "destructive" },
-};
+const STATE_LABEL: Record<EnxameKeyView["state"], { label: string; variant: "default" | "secondary" | "destructive" }> =
+  {
+    available: { label: "Disponível", variant: "default" },
+    cooldown: { label: "Em cooldown", variant: "secondary" },
+    disabled: { label: "Desativada", variant: "destructive" },
+  };
 
 function formatDate(iso: string | null): string {
   if (!iso) return "nunca";
-  return new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 interface KeysTableProps {
@@ -47,7 +55,9 @@ export function KeysTable({ keys, loading, mutatingId, onAdd, onToggle, onRemove
       <CardHeader className="flex flex-row items-start justify-between gap-3">
         <div>
           <CardTitle>Chaves do pool</CardTitle>
-          <CardDescription>Groq e Gemini cadastrados no Enxame — a chave em si nunca é exibida de volta.</CardDescription>
+          <CardDescription>
+            Groq e Gemini cadastrados no Enxame — a chave em si nunca é exibida de volta.
+          </CardDescription>
         </div>
         <AddKeyDialog onAdd={onAdd} />
       </CardHeader>
@@ -86,9 +96,11 @@ export function KeysTable({ keys, loading, mutatingId, onAdd, onToggle, onRemove
                 return (
                   <TableRow key={key.id}>
                     <TableCell className="font-medium">{key.id}</TableCell>
-                    <TableCell className="capitalize text-muted-foreground">{key.provider}</TableCell>
+                    <TableCell className="text-muted-foreground capitalize">{key.provider}</TableCell>
                     <TableCell className="text-muted-foreground">{key.model ?? "—"}</TableCell>
-                    <TableCell className="font-mono text-muted-foreground text-xs">{key.apiKeyPreview ?? "—"}</TableCell>
+                    <TableCell className="font-mono text-muted-foreground text-xs">
+                      {key.apiKeyPreview ?? "—"}
+                    </TableCell>
                     <TableCell className="text-muted-foreground tabular-nums">
                       {key.totalCalls}
                       {key.totalErrors > 0 && <span className="text-destructive"> ({key.totalErrors} erros)</span>}
@@ -108,7 +120,12 @@ export function KeysTable({ keys, loading, mutatingId, onAdd, onToggle, onRemove
                     <TableCell>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8 text-muted-foreground hover:text-destructive" disabled={isMutating}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8 text-muted-foreground hover:text-destructive"
+                            disabled={isMutating}
+                          >
                             <Trash2 className="size-4" />
                           </Button>
                         </AlertDialogTrigger>
@@ -116,13 +133,16 @@ export function KeysTable({ keys, loading, mutatingId, onAdd, onToggle, onRemove
                           <AlertDialogHeader>
                             <AlertDialogTitle>Remover chave {key.id}?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Isso remove a chave permanentemente do pool do Enxame. Requisições futuras deixam de poder usar
-                              essa chave — essa ação não pode ser desfeita.
+                              Isso remove a chave permanentemente do pool do Enxame. Requisições futuras deixam de poder
+                              usar essa chave — essa ação não pode ser desfeita.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => onRemove(key.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            <AlertDialogAction
+                              onClick={() => onRemove(key.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
                               Remover
                             </AlertDialogAction>
                           </AlertDialogFooter>

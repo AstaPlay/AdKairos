@@ -133,14 +133,14 @@ export interface KairoossRawProduct {
   pausadoPorEstoque?: boolean;
 }
 
-export function mapKairoossProduct(
-  raw: KairoossRawProduct,
-  vendasPorProduto?: Map<string, number>,
-) {
+export function mapKairoossProduct(raw: KairoossRawProduct, vendasPorProduto?: Map<string, number>) {
   const images = [
     ...(raw.imagemPrincipalUrl ? [raw.imagemPrincipalUrl] : []),
     ...(raw.imagensSecundariasUrls
-      ? raw.imagensSecundariasUrls.split(",").map((url) => url.trim()).filter(Boolean)
+      ? raw.imagensSecundariasUrls
+          .split(",")
+          .map((url) => url.trim())
+          .filter(Boolean)
       : []),
   ];
 
@@ -422,7 +422,7 @@ export async function fetchOrderTrackingStatus(
         matchedEndpoint: endpoint,
       };
     } catch {
-      continue; // endpoint indisponível/timeout — tenta o próximo candidato
+      // Endpoint candidato falhou (rede, parse, etc.) — tenta o próximo.
     }
   }
 

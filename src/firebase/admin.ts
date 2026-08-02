@@ -1,7 +1,8 @@
 import "server-only";
-import { getApps, initializeApp, cert, type App } from "firebase-admin/app";
-import { getAuth, type Auth } from "firebase-admin/auth";
-import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { type App, cert, getApps, initializeApp } from "firebase-admin/app";
+import { type Auth, getAuth } from "firebase-admin/auth";
+import { type Firestore, getFirestore } from "firebase-admin/firestore";
+
 import { getServerEnv } from "@/config/env.config";
 
 function normalizePrivateKey(rawKey: string): string {

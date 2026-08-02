@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import type * as React from "react";
 
 import { Package, PackageX, ShoppingBasket, Sparkles } from "lucide-react";
 import { RadialBar, RadialBarChart } from "recharts";
@@ -31,12 +31,20 @@ const kpiChartConfig = {
  * de produtos. É sempre dado real, nunca inventado, e sempre disponível —
  * mesmo com 1 produto só no catálogo.
  */
-function ProportionRing({ value, total, colorKey }: { value: number; total: number; colorKey: keyof typeof kpiChartConfig }) {
+function ProportionRing({
+  value,
+  total,
+  colorKey,
+}: {
+  value: number;
+  total: number;
+  colorKey: keyof typeof kpiChartConfig;
+}) {
   const pct = total > 0 ? Math.round((value / total) * 100) : 0;
   const data = [{ name: "value", value: pct, fill: `var(--color-${colorKey})` }];
 
   return (
-    <ChartContainer config={kpiChartConfig} className="relative h-11 w-11 shrink-0 aspect-square">
+    <ChartContainer config={kpiChartConfig} className="relative aspect-square h-11 w-11 shrink-0">
       <RadialBarChart
         width={44}
         height={44}
@@ -47,9 +55,14 @@ function ProportionRing({ value, total, colorKey }: { value: number; total: numb
         startAngle={90}
         endAngle={90 - 360 * (pct / 100)}
       >
-        <RadialBar dataKey="value" cornerRadius={4} background={{ fill: "var(--muted)" }} fill={`var(--color-${colorKey})`} />
+        <RadialBar
+          dataKey="value"
+          cornerRadius={4}
+          background={{ fill: "var(--muted)" }}
+          fill={`var(--color-${colorKey})`}
+        />
       </RadialBarChart>
-      <span className="pointer-events-none absolute inset-0 flex items-center justify-center font-mono text-[9px] font-semibold tabular-nums text-muted-foreground">
+      <span className="pointer-events-none absolute inset-0 flex items-center justify-center font-mono font-semibold text-[9px] text-muted-foreground tabular-nums">
         {pct}%
       </span>
     </ChartContainer>
@@ -83,12 +96,12 @@ function KpiCard({
       style={{ borderTopColor: `var(--color-${colorKey})`, borderTopWidth: 2 }}
     >
       <div
-        className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full opacity-[0.07] blur-2xl transition-opacity group-hover:opacity-[0.14]"
+        className="pointer-events-none absolute -top-6 -right-6 size-24 rounded-full opacity-[0.07] blur-2xl transition-opacity group-hover:opacity-[0.14]"
         style={{ backgroundColor: `var(--color-${colorKey})` }}
         aria-hidden
       />
       <CardHeader className="px-3 sm:px-6">
-        <CardDescription className="font-mono text-[10px] tracking-wide break-words uppercase sm:text-[11px]">
+        <CardDescription className="break-words font-mono text-[10px] uppercase tracking-wide sm:text-[11px]">
           {label}
         </CardDescription>
         <CardAction>
@@ -103,7 +116,7 @@ function KpiCard({
       <CardContent className="relative flex min-h-11 items-end justify-between gap-2 px-3 sm:gap-3 sm:px-6">
         <span
           className={cn(
-            "leading-none tracking-tight tabular-nums",
+            "tabular-nums leading-none tracking-tight",
             emphasis ? "text-3xl sm:text-4xl" : "text-2xl sm:text-3xl",
           )}
         >

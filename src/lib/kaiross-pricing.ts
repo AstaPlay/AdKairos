@@ -47,7 +47,11 @@ export function formatarMoeda(valor: number): string {
 
 export function parseNumeroBr(valor: string | number): number {
   if (typeof valor === "number") return valor;
-  const parsed = parseFloat(String(valor || "0").replace(/[^\d,.-]/g, "").replace(",", "."));
+  const parsed = parseFloat(
+    String(valor || "0")
+      .replace(/[^\d,.-]/g, "")
+      .replace(",", "."),
+  );
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
@@ -85,8 +89,7 @@ export function calcularPrecificacao({
   const status: StatusMargem = lucro <= 0 ? "prejuizo" : margem >= 25 ? "saudavel" : margem >= 15 ? "apertado" : "ruim";
 
   const precoMin =
-    (pCusto + pCustoFrete + pFreteCobrado + taxaPlataformaFixa) /
-    (1 - impostoPercentual - taxaPlataformaPercentual);
+    (pCusto + pCustoFrete + pFreteCobrado + taxaPlataformaFixa) / (1 - impostoPercentual - taxaPlataformaPercentual);
   const precoRec =
     (pCusto + pCustoFrete + pFreteCobrado + taxaPlataformaFixa) /
     (1 - impostoPercentual - taxaPlataformaPercentual - margemRecomendadaPercentual);
@@ -103,10 +106,7 @@ export function calcularPrecificacao({
   };
 }
 
-export const STATUS_MARGEM_STYLE: Record<
-  StatusMargem,
-  { bg: string; text: string; border: string; label: string }
-> = {
+export const STATUS_MARGEM_STYLE: Record<StatusMargem, { bg: string; text: string; border: string; label: string }> = {
   saudavel: {
     bg: "bg-emerald-500/10",
     text: "text-emerald-600 dark:text-emerald-400",

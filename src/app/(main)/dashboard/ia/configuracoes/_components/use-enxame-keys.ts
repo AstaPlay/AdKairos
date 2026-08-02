@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+
 import { toast } from "sonner";
+
 import type { EnxameKeyView } from "@/lib/enxame-client";
 
 interface UseEnxameKeysResult {
@@ -43,7 +45,7 @@ export function useEnxameKeys(): UseEnxameKeysResult {
   }, []);
 
   useEffect(() => {
-    fetchKeys();
+    void fetchKeys();
   }, [fetchKeys]);
 
   const addKey = useCallback(

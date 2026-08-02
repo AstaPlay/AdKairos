@@ -119,9 +119,7 @@ export interface ProcessarCheckoutResult {
  * processa o pagamento (o token do cartão, gerado no passo 2 no client,
  * já vem pronto aqui — nunca vemos o número do cartão neste servidor).
  */
-export async function processarCheckoutKaiross(
-  input: ProcessarCheckoutInput,
-): Promise<ProcessarCheckoutResult> {
+export async function processarCheckoutKaiross(input: ProcessarCheckoutInput): Promise<ProcessarCheckoutResult> {
   const response = await kairoossCheckoutRequest("/vendas/checkout", {
     method: "POST",
     body: JSON.stringify({
@@ -146,9 +144,11 @@ export async function processarCheckoutKaiross(
     }),
   });
 
-  const data = (await response.json().catch(() => null)) as
-    | { message?: string; numeroPedido?: string; pix?: ProcessarCheckoutResult["pix"] }
-    | null;
+  const data = (await response.json().catch(() => null)) as {
+    message?: string;
+    numeroPedido?: string;
+    pix?: ProcessarCheckoutResult["pix"];
+  } | null;
 
   if (!response.ok) {
     return {

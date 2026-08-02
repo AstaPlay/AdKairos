@@ -6,5 +6,5 @@ export const metadata: Metadata = {
 };
 
 export default function CheckoutLayout({ children }: { children: React.ReactNode }) {
-  return <div className="bg-background min-h-svh">{children}</div>;
+  return <div className="min-h-svh bg-background">{children}</div>;
 }

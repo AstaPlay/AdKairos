@@ -20,7 +20,6 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
 import { useAsyncAction } from "@/hooks/use-async-action";
@@ -87,7 +86,11 @@ async function afiliarProduto(payload: {
   return json.data as AfiliarResult;
 }
 
-async function gerarPalavrasChave(context: { name: string; description?: string; category?: string }): Promise<string[]> {
+async function gerarPalavrasChave(context: {
+  name: string;
+  description?: string;
+  category?: string;
+}): Promise<string[]> {
   const response = await fetch("/api/ai/produtos", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -235,9 +238,7 @@ export function CatalogAffiliateSheet({
         isLoading: false,
         data: null,
         error: error instanceof Error ? error.message : "Não foi possível salvar o produto.",
-        alreadyAffiliatedProductId: isAlreadyAffiliated
-          ? ((error as AfiliarError).existingProductId ?? null)
-          : null,
+        alreadyAffiliatedProductId: isAlreadyAffiliated ? ((error as AfiliarError).existingProductId ?? null) : null,
       });
     }
     // Não fecha o sheet aqui — o resultado (link/warning) fica visível e o
@@ -266,14 +267,16 @@ export function CatalogAffiliateSheet({
   // exatamente pelo custo já fica abaixo do sliderMin (que embute uma
   // margem mínima de segurança); os outros dois não precisam de clamp.
   function handlePresetCusto() {
-    setPrecoVenda(Math.max(product!.price, sliderMin));
+    if (!product) return;
+    setPrecoVenda(Math.max(product.price, sliderMin));
     priceCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
   function handlePresetFocarSlider() {
     priceCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
   function handlePresetRecomendado() {
-    setPrecoVenda(calculo!.precoRec);
+    if (!calculo) return;
+    setPrecoVenda(calculo.precoRec);
     priceCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
   const isPresetCusto = Math.abs(precoVenda - Math.max(product.price, sliderMin)) < 0.01;
@@ -285,10 +288,7 @@ export function CatalogAffiliateSheet({
         side={isMobile ? "bottom" : "right"}
         onOpenAutoFocus={(event) => event.preventDefault()}
         style={isMobile ? { height: "92svh", maxHeight: "92svh" } : undefined}
-        className={cn(
-          "flex flex-col gap-0 overflow-hidden p-0 sm:max-w-lg",
-          isMobile && "rounded-t-3xl border-t",
-        )}
+        className={cn("flex flex-col gap-0 overflow-hidden p-0 sm:max-w-lg", isMobile && "rounded-t-3xl border-t")}
       >
         {isMobile && (
           <div className="absolute inset-x-0 top-0 z-20 flex justify-center pt-2.5 pb-1">
@@ -322,7 +322,7 @@ export function CatalogAffiliateSheet({
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-black/30" />
 
             {product.isInternational && (
-              <span className="absolute top-3.5 right-4 inline-flex items-center gap-1 rounded-full bg-black/50 px-2.5 py-1 text-[10px] font-medium text-white backdrop-blur-md">
+              <span className="absolute top-3.5 right-4 inline-flex items-center gap-1 rounded-full bg-black/50 px-2.5 py-1 font-medium text-[10px] text-white backdrop-blur-md">
                 <Globe className="size-3" strokeWidth={2} />
                 Internacional
               </span>
@@ -331,17 +331,17 @@ export function CatalogAffiliateSheet({
             <div className="absolute inset-x-4 bottom-3.5">
               <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
                 {product.category && (
-                  <span className="inline-block rounded-full bg-white/15 px-2.5 py-1 font-mono text-[10px] font-medium tracking-[0.04em] text-white backdrop-blur-md">
+                  <span className="inline-block rounded-full bg-white/15 px-2.5 py-1 font-medium font-mono text-[10px] text-white tracking-[0.04em] backdrop-blur-md">
                     {product.category}
                   </span>
                 )}
                 {product.brand && (
-                  <span className="inline-block rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-medium text-white backdrop-blur-md">
+                  <span className="inline-block rounded-full bg-white/15 px-2.5 py-1 font-medium text-[10px] text-white backdrop-blur-md">
                     {product.brand}
                   </span>
                 )}
               </div>
-              <h2 className="line-clamp-2 text-xl font-semibold leading-tight text-white drop-shadow-sm">
+              <h2 className="line-clamp-2 font-semibold text-white text-xl leading-tight drop-shadow-sm">
                 {product.name}
               </h2>
               {product.sku && <p className="mt-0.5 font-mono text-[11px] text-white/70">SKU {product.sku}</p>}
@@ -357,7 +357,9 @@ export function CatalogAffiliateSheet({
                   onClick={() => setActiveImage(index)}
                   className={cn(
                     "h-14 w-14 shrink-0 overflow-hidden rounded-lg border transition-all duration-200",
-                    index === activeImage ? "border-primary shadow-sm" : "border-transparent opacity-60 hover:opacity-100",
+                    index === activeImage
+                      ? "border-primary shadow-sm"
+                      : "border-transparent opacity-60 hover:opacity-100",
                   )}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element -- miniatura remota */}
@@ -368,350 +370,390 @@ export function CatalogAffiliateSheet({
           )}
 
           <div className="flex flex-col gap-5 px-4">
-          {product.description && (
-            <p className="line-clamp-3 text-[13px] leading-5 text-muted-foreground">{product.description}</p>
-          )}
+            {product.description && (
+              <p className="line-clamp-3 text-[13px] text-muted-foreground leading-5">{product.description}</p>
+            )}
 
-          {/* Como funciona — os "3 selos" do modelo de dropshipping, mesma
+            {/* Como funciona — os "3 selos" do modelo de dropshipping, mesma
               lógica comunicada pela própria Kairóss (preço de custo / você
               decide o preço / zero risco de estoque), mas aqui também são
               atalhos reais: cada um aplica (ou foca) um valor no slider de
               preço logo abaixo, em vez de só ilustrar o conceito. */}
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={handlePresetCusto}
-              className={cn(
-                "rounded-xl border p-2.5 text-left transition-colors",
-                isPresetCusto ? "border-foreground/40 bg-card ring-1 ring-foreground/15" : "border-border bg-card hover:border-foreground/25",
-              )}
-            >
-              <p className="text-[9.5px] font-semibold uppercase tracking-wide text-muted-foreground">Preço de custo</p>
-              <p className="mt-1 font-mono text-sm font-bold tabular-nums">R$ {formatarMoeda(product.price)}</p>
-              <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">Recomendado pelo fornecedor</p>
-            </button>
-            <button
-              type="button"
-              onClick={handlePresetFocarSlider}
-              className="rounded-xl border border-primary/30 bg-primary/[0.06] p-2.5 text-left transition-colors hover:bg-primary/[0.1]"
-            >
-              <p className="text-[9.5px] font-semibold uppercase tracking-wide text-primary">Você decide</p>
-              <p className="mt-1 text-sm font-bold text-primary">Defina o preço</p>
-              <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">Venda pelo preço que quiser</p>
-            </button>
-            <button
-              type="button"
-              onClick={handlePresetRecomendado}
-              className={cn(
-                "rounded-xl border p-2.5 text-left transition-colors",
-                isPresetRecomendado
-                  ? "border-emerald-500/50 bg-emerald-500/[0.1] ring-1 ring-emerald-500/25"
-                  : "border-emerald-500/30 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.1]",
-              )}
-            >
-              <p className="text-[9.5px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
-                Zero risco
-              </p>
-              <p className="mt-1 text-sm font-bold text-emerald-600 dark:text-emerald-400">Preço recomendado</p>
-              <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">Margem saudável para escalar</p>
-            </button>
-          </div>
-
-          {/* Estoque disponível */}
-          <div className="flex items-center justify-between rounded-2xl border bg-card p-4 shadow-sm">
-            <div>
-              <p className="text-[11px] font-medium text-muted-foreground">Estoque disponível</p>
-              <p className="text-[10.5px] leading-snug text-muted-foreground">
-                {product.isInternational ? "Sob encomenda internacional" : "Unidades prontas para venda"}
-              </p>
-            </div>
-            <p
-              className={cn(
-                "font-mono text-2xl font-bold tabular-nums",
-                !product.isInternational && product.stock <= 0 && "text-destructive",
-              )}
-            >
-              {product.isInternational ? "—" : product.stock.toLocaleString("pt-BR")}
-              {!product.isInternational && <span className="ml-1 text-xs font-medium text-muted-foreground">un</span>}
-            </p>
-          </div>
-
-          <div ref={priceCardRef} className={cn("relative overflow-hidden rounded-2xl border p-4 shadow-sm", statusStyle.border, statusStyle.bg)}>
-            <div
-              className={cn("pointer-events-none absolute -right-10 -top-10 size-40 rounded-full opacity-20 blur-3xl", statusStyle.text)}
-              style={{ backgroundColor: "currentColor" }}
-              aria-hidden
-            />
-            <div className="relative flex items-center justify-between gap-3">
-              <p className="text-[13px] font-semibold">Defina seu preço de venda</p>
-              <Button type="button" variant="outline" size="sm" onClick={handleSugerirPreco} disabled={sugestaoAction.isLoading}>
-                <Wand2 data-icon="inline-start" className="size-3.5" strokeWidth={2} />
-                {sugestaoAction.isLoading ? "Calculando..." : "IA sugere o preço"}
-              </Button>
-            </div>
-
-            {sugestaoAction.data && (
-              <div className="animate-in fade-in relative mt-3 rounded-lg border border-primary/20 bg-primary/[0.06] p-3">
-                <div className="flex items-center gap-1.5 text-primary">
-                  <TrendingUp className="size-3.5" strokeWidth={2} />
-                  <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.06em]">
-                    {sugestaoAction.data.origem === "formula_com_pesquisa" ? "Pesquisa de mercado" : "Sugestão por fórmula"}
-                  </p>
-                </div>
-                <p className="mt-1 text-[12.5px] leading-5">{sugestaoAction.data.justificativa}</p>
-                {sugestaoAction.data.referenciasMercado.length > 0 && (
-                  <ul className="mt-2 flex flex-wrap gap-1.5">
-                    {sugestaoAction.data.referenciasMercado.map((ref) => (
-                      <li key={ref} className="rounded-full bg-muted px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
-                        {ref}
-                      </li>
-                    ))}
-                  </ul>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={handlePresetCusto}
+                className={cn(
+                  "rounded-xl border p-2.5 text-left transition-colors",
+                  isPresetCusto
+                    ? "border-foreground/40 bg-card ring-1 ring-foreground/15"
+                    : "border-border bg-card hover:border-foreground/25",
                 )}
-              </div>
-            )}
-            {sugestaoAction.error && (
-              <Alert variant="destructive" className="mt-3">
-                <AlertDescription>{sugestaoAction.error}</AlertDescription>
-              </Alert>
-            )}
+              >
+                <p className="font-semibold text-[9.5px] text-muted-foreground uppercase tracking-wide">
+                  Preço de custo
+                </p>
+                <p className="mt-1 font-bold font-mono text-sm tabular-nums">R$ {formatarMoeda(product.price)}</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground leading-snug">Recomendado pelo fornecedor</p>
+              </button>
+              <button
+                type="button"
+                onClick={handlePresetFocarSlider}
+                className="rounded-xl border border-primary/30 bg-primary/[0.06] p-2.5 text-left transition-colors hover:bg-primary/[0.1]"
+              >
+                <p className="font-semibold text-[9.5px] text-primary uppercase tracking-wide">Você decide</p>
+                <p className="mt-1 font-bold text-primary text-sm">Defina o preço</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground leading-snug">Venda pelo preço que quiser</p>
+              </button>
+              <button
+                type="button"
+                onClick={handlePresetRecomendado}
+                className={cn(
+                  "rounded-xl border p-2.5 text-left transition-colors",
+                  isPresetRecomendado
+                    ? "border-emerald-500/50 bg-emerald-500/[0.1] ring-1 ring-emerald-500/25"
+                    : "border-emerald-500/30 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.1]",
+                )}
+              >
+                <p className="font-semibold text-[9.5px] text-emerald-600 uppercase tracking-wide dark:text-emerald-400">
+                  Zero risco
+                </p>
+                <p className="mt-1 font-bold text-emerald-600 text-sm dark:text-emerald-400">Preço recomendado</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground leading-snug">Margem saudável para escalar</p>
+              </button>
+            </div>
 
-            <div className="relative mt-4 flex items-end justify-between gap-3">
+            {/* Estoque disponível */}
+            <div className="flex items-center justify-between rounded-2xl border bg-card p-4 shadow-sm">
               <div>
-                <p className="text-[11px] font-medium text-muted-foreground">Seu preço de venda</p>
-                <p className="text-2xl font-extrabold tracking-tight">R$ {formatarMoeda(precoVenda)}</p>
-              </div>
-              <div className={cn("rounded-lg border px-2.5 py-1 text-right", statusStyle.bg, statusStyle.border)}>
-                <p className={cn("font-mono text-[10px] font-bold uppercase tracking-[0.05em]", statusStyle.text)}>
-                  {statusStyle.label}
-                </p>
-                <p className={cn("font-mono text-[11px] font-semibold tabular-nums", statusStyle.text)}>
-                  margem {calculo.margem.toFixed(0)}%
+                <p className="font-medium text-[11px] text-muted-foreground">Estoque disponível</p>
+                <p className="text-[10.5px] text-muted-foreground leading-snug">
+                  {product.isInternational ? "Sob encomenda internacional" : "Unidades prontas para venda"}
                 </p>
               </div>
-            </div>
-
-            <Slider
-              className="relative mt-3"
-              value={[precoVenda]}
-              min={sliderMin}
-              max={sliderMax}
-              step={0.5}
-              onValueChange={([value]) => setPrecoVenda(value)}
-            />
-            <div className="relative mt-1.5 flex justify-between font-mono text-[10px] tabular-nums text-muted-foreground/70">
-              <span>mín. R$ {formatarMoeda(calculo.precoMin)}</span>
-              <span>recomendado R$ {formatarMoeda(calculo.precoRec)}</span>
-            </div>
-
-            <div className="relative mt-4 grid grid-cols-2 gap-3 border-t pt-3 font-mono text-[11px] tabular-nums">
-              <div>
-                <p className="text-muted-foreground">Lucro líquido</p>
-                <p className={cn("font-semibold", statusStyle.text)}>R$ {formatarMoeda(calculo.lucro)}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-muted-foreground">Total cobrado</p>
-                <p className="font-semibold">R$ {formatarMoeda(calculo.totalVenda)}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border">
-            <button
-              type="button"
-              onClick={() => setFreteOpen((current) => !current)}
-              className="flex w-full items-center gap-2 px-4 py-3.5 text-left"
-            >
-              <Truck className="size-3.5 text-muted-foreground" strokeWidth={2} />
-              <div className="flex-1">
-                <p className="text-[13px] font-semibold">Frete</p>
-                <p className="text-[11px] font-normal text-muted-foreground">
-                  {vendedorAssumeFrete ? "Você assume o custo" : "Cliente paga no checkout"}
-                </p>
-              </div>
-              <ChevronDown
-                className={cn("size-4 shrink-0 text-muted-foreground transition-transform duration-200", freteOpen && "rotate-180")}
-                strokeWidth={2}
-              />
-            </button>
-            <div className="grid transition-[grid-template-rows] duration-300 ease-out" style={{ gridTemplateRows: freteOpen ? "1fr" : "0fr" }}>
-              <div className="overflow-hidden">
-                <div className="flex flex-col gap-2 border-t px-4 pt-3 pb-4">
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setVendedorAssumeFrete(false)}
-                      className={cn(
-                        "rounded-lg border px-3 py-2.5 text-left text-[12px] transition-all duration-200",
-                        !vendedorAssumeFrete ? "border-primary bg-primary/[0.08]" : "text-muted-foreground hover:bg-accent",
-                      )}
-                    >
-                      <p className="font-semibold text-foreground">Cliente paga</p>
-                      <p className="mt-0.5 text-[10.5px] opacity-80">Calculado no checkout</p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setVendedorAssumeFrete(true)}
-                      className={cn(
-                        "rounded-lg border px-3 py-2.5 text-left text-[12px] transition-all duration-200",
-                        vendedorAssumeFrete ? "border-primary bg-primary/[0.08]" : "text-muted-foreground hover:bg-accent",
-                      )}
-                    >
-                      <p className="font-semibold text-foreground">Você assume</p>
-                      <p className="mt-0.5 text-[10.5px] opacity-80">+conversão, -margem</p>
-                    </button>
-                  </div>
-                  {vendedorAssumeFrete && (
-                    <label className="animate-in fade-in mt-1 flex items-center justify-between gap-3 text-[12px]">
-                      <span className="text-muted-foreground">Custo estimado do frete</span>
-                      <input
-                        type="number"
-                        min={0}
-                        step={0.5}
-                        value={custoFrete || ""}
-                        onChange={(event) => setCustoFrete(Number(event.target.value) || 0)}
-                        placeholder="0,00"
-                        className="w-24 rounded-md border bg-background px-2 py-1 text-right font-mono focus:border-primary focus:outline-none"
-                      />
-                    </label>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border">
-            <button
-              type="button"
-              onClick={() => setKeywordsOpen((current) => !current)}
-              className="flex w-full items-center gap-2 px-4 py-3.5 text-left"
-            >
-              <Sparkles className="size-3.5 text-muted-foreground" strokeWidth={2} />
-              <div className="flex-1">
-                <p className="text-[13px] font-semibold">Palavras-chave para o bot</p>
-                <p className="text-[11px] font-normal text-muted-foreground">
-                  {tags.length > 0
-                    ? `${tags.length} palavra${tags.length > 1 ? "s" : ""} definida${tags.length > 1 ? "s" : ""}`
-                    : "Ajuda o bot de WhatsApp a reconhecer o produto"}
-                </p>
-              </div>
-              <ChevronDown
-                className={cn("size-4 shrink-0 text-muted-foreground transition-transform duration-200", keywordsOpen && "rotate-180")}
-                strokeWidth={2}
-              />
-            </button>
-            <div
-              className="grid transition-[grid-template-rows] duration-300 ease-out"
-              style={{ gridTemplateRows: keywordsOpen ? "1fr" : "0fr" }}
-            >
-              <div className="overflow-hidden">
-                <div className="flex flex-col gap-2 border-t px-4 pt-3 pb-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleGerarPalavrasChave}
-                    disabled={keywordsAction.isLoading}
-                    className="w-fit"
-                  >
-                    <Sparkles data-icon="inline-start" className="size-3.5" strokeWidth={2} />
-                    {keywordsAction.isLoading ? "Gerando..." : "Gerar com IA"}
-                  </Button>
-                  {tags.length > 0 && (
-                    <div className="animate-in fade-in flex flex-wrap gap-1.5">
-                      {tags.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="gap-1 pr-1.5 text-[10.5px]">
-                          {tag}
-                          <button
-                            type="button"
-                            onClick={() => setTags((current) => current.filter((item) => item !== tag))}
-                            aria-label={`Remover ${tag}`}
-                            className="text-muted-foreground/70 transition-colors hover:text-destructive"
-                          >
-                            <XIcon className="size-2.5" strokeWidth={2.5} />
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                  {keywordsAction.error && (
-                    <Alert variant="destructive" className="mt-1">
-                      <AlertDescription>{keywordsAction.error}</AlertDescription>
-                    </Alert>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {afiliarState.error && !afiliarState.alreadyAffiliatedProductId && (
-            <Alert variant="destructive">
-              <AlertDescription>{afiliarState.error}</AlertDescription>
-            </Alert>
-          )}
-
-          {afiliarState.alreadyAffiliatedProductId && (
-            <div className="animate-in fade-in flex flex-col gap-3 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.06] p-4">
-              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 className="size-4 shrink-0" strokeWidth={2} />
-                <p className="text-[13px] font-semibold">Este produto já está no seu catálogo</p>
-              </div>
-              <p className="text-[12px] text-muted-foreground">
-                Não é possível afiliar o mesmo produto duas vezes. Abra a ficha já salva para editar preço, estoque ou
-                qualquer outro dado.
+              <p
+                className={cn(
+                  "font-bold font-mono text-2xl tabular-nums",
+                  !product.isInternational && product.stock <= 0 && "text-destructive",
+                )}
+              >
+                {product.isInternational ? "—" : product.stock.toLocaleString("pt-BR")}
+                {!product.isInternational && <span className="ml-1 font-medium text-muted-foreground text-xs">un</span>}
               </p>
             </div>
-          )}
 
-          {afiliarState.data && (
-            <div className="animate-in fade-in flex flex-col gap-3 rounded-2xl border border-primary/25 bg-primary/[0.06] p-4">
-              <div className="flex items-center gap-2 text-primary">
-                <CheckCircle2 className="size-4 shrink-0" strokeWidth={2} />
-                <p className="text-[13px] font-semibold">Produto salvo e ativo na sua vitrine</p>
+            <div
+              ref={priceCardRef}
+              className={cn(
+                "relative overflow-hidden rounded-2xl border p-4 shadow-sm",
+                statusStyle.border,
+                statusStyle.bg,
+              )}
+            >
+              <div
+                className={cn(
+                  "pointer-events-none absolute -top-10 -right-10 size-40 rounded-full opacity-20 blur-3xl",
+                  statusStyle.text,
+                )}
+                style={{ backgroundColor: "currentColor" }}
+                aria-hidden
+              />
+              <div className="relative flex items-center justify-between gap-3">
+                <p className="font-semibold text-[13px]">Defina seu preço de venda</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSugerirPreco}
+                  disabled={sugestaoAction.isLoading}
+                >
+                  <Wand2 data-icon="inline-start" className="size-3.5" strokeWidth={2} />
+                  {sugestaoAction.isLoading ? "Calculando..." : "IA sugere o preço"}
+                </Button>
               </div>
 
-              {afiliarState.data.warning && (
-                <Alert variant="destructive">
-                  <AlertDescription>{afiliarState.data.warning}</AlertDescription>
+              {sugestaoAction.data && (
+                <div className="fade-in relative mt-3 animate-in rounded-lg border border-primary/20 bg-primary/[0.06] p-3">
+                  <div className="flex items-center gap-1.5 text-primary">
+                    <TrendingUp className="size-3.5" strokeWidth={2} />
+                    <p className="font-mono font-semibold text-[10px] uppercase tracking-[0.06em]">
+                      {sugestaoAction.data.origem === "formula_com_pesquisa"
+                        ? "Pesquisa de mercado"
+                        : "Sugestão por fórmula"}
+                    </p>
+                  </div>
+                  <p className="mt-1 text-[12.5px] leading-5">{sugestaoAction.data.justificativa}</p>
+                  {sugestaoAction.data.referenciasMercado.length > 0 && (
+                    <ul className="mt-2 flex flex-wrap gap-1.5">
+                      {sugestaoAction.data.referenciasMercado.map((ref) => (
+                        <li
+                          key={ref}
+                          className="rounded-full bg-muted px-2 py-0.5 font-mono text-[10px] text-muted-foreground"
+                        >
+                          {ref}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+              {sugestaoAction.error && (
+                <Alert variant="destructive" className="mt-3">
+                  <AlertDescription>{sugestaoAction.error}</AlertDescription>
                 </Alert>
               )}
 
-              {afiliarState.data.link && (
-                <div className="flex items-center gap-2 rounded-lg border bg-background p-2.5">
-                  <p className="min-w-0 flex-1 truncate font-mono text-[11.5px]">{afiliarState.data.link}</p>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await navigator.clipboard.writeText(afiliarState.data!.link!);
-                      setLinkCopied(true);
-                      setTimeout(() => setLinkCopied(false), 1800);
-                    }}
-                    aria-label="Copiar link de checkout"
-                    className="flex shrink-0 items-center gap-1 rounded-md border px-2 py-1 font-mono text-[10.5px] transition-colors hover:border-primary hover:text-primary"
-                  >
-                    {linkCopied ? (
-                      <>
-                        <Check className="size-3" strokeWidth={2.5} /> Copiado
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="size-3" strokeWidth={2} /> Copiar
-                      </>
-                    )}
-                  </button>
-                  <a
-                    href={afiliarState.data.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Abrir link de checkout"
-                    className="shrink-0 text-muted-foreground transition-colors hover:text-primary"
-                  >
-                    <ExternalLink className="size-3.5" strokeWidth={2} />
-                  </a>
+              <div className="relative mt-4 flex items-end justify-between gap-3">
+                <div>
+                  <p className="font-medium text-[11px] text-muted-foreground">Seu preço de venda</p>
+                  <p className="font-extrabold text-2xl tracking-tight">R$ {formatarMoeda(precoVenda)}</p>
                 </div>
-              )}
+                <div className={cn("rounded-lg border px-2.5 py-1 text-right", statusStyle.bg, statusStyle.border)}>
+                  <p className={cn("font-bold font-mono text-[10px] uppercase tracking-[0.05em]", statusStyle.text)}>
+                    {statusStyle.label}
+                  </p>
+                  <p className={cn("font-mono font-semibold text-[11px] tabular-nums", statusStyle.text)}>
+                    margem {calculo.margem.toFixed(0)}%
+                  </p>
+                </div>
+              </div>
+
+              <Slider
+                className="relative mt-3"
+                value={[precoVenda]}
+                min={sliderMin}
+                max={sliderMax}
+                step={0.5}
+                onValueChange={([value]) => setPrecoVenda(value)}
+              />
+              <div className="relative mt-1.5 flex justify-between font-mono text-[10px] text-muted-foreground/70 tabular-nums">
+                <span>mín. R$ {formatarMoeda(calculo.precoMin)}</span>
+                <span>recomendado R$ {formatarMoeda(calculo.precoRec)}</span>
+              </div>
+
+              <div className="relative mt-4 grid grid-cols-2 gap-3 border-t pt-3 font-mono text-[11px] tabular-nums">
+                <div>
+                  <p className="text-muted-foreground">Lucro líquido</p>
+                  <p className={cn("font-semibold", statusStyle.text)}>R$ {formatarMoeda(calculo.lucro)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-muted-foreground">Total cobrado</p>
+                  <p className="font-semibold">R$ {formatarMoeda(calculo.totalVenda)}</p>
+                </div>
+              </div>
             </div>
-          )}
+
+            <div className="rounded-2xl border">
+              <button
+                type="button"
+                onClick={() => setFreteOpen((current) => !current)}
+                className="flex w-full items-center gap-2 px-4 py-3.5 text-left"
+              >
+                <Truck className="size-3.5 text-muted-foreground" strokeWidth={2} />
+                <div className="flex-1">
+                  <p className="font-semibold text-[13px]">Frete</p>
+                  <p className="font-normal text-[11px] text-muted-foreground">
+                    {vendedorAssumeFrete ? "Você assume o custo" : "Cliente paga no checkout"}
+                  </p>
+                </div>
+                <ChevronDown
+                  className={cn(
+                    "size-4 shrink-0 text-muted-foreground transition-transform duration-200",
+                    freteOpen && "rotate-180",
+                  )}
+                  strokeWidth={2}
+                />
+              </button>
+              <div
+                className="grid transition-[grid-template-rows] duration-300 ease-out"
+                style={{ gridTemplateRows: freteOpen ? "1fr" : "0fr" }}
+              >
+                <div className="overflow-hidden">
+                  <div className="flex flex-col gap-2 border-t px-4 pt-3 pb-4">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setVendedorAssumeFrete(false)}
+                        className={cn(
+                          "rounded-lg border px-3 py-2.5 text-left text-[12px] transition-all duration-200",
+                          !vendedorAssumeFrete
+                            ? "border-primary bg-primary/[0.08]"
+                            : "text-muted-foreground hover:bg-accent",
+                        )}
+                      >
+                        <p className="font-semibold text-foreground">Cliente paga</p>
+                        <p className="mt-0.5 text-[10.5px] opacity-80">Calculado no checkout</p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setVendedorAssumeFrete(true)}
+                        className={cn(
+                          "rounded-lg border px-3 py-2.5 text-left text-[12px] transition-all duration-200",
+                          vendedorAssumeFrete
+                            ? "border-primary bg-primary/[0.08]"
+                            : "text-muted-foreground hover:bg-accent",
+                        )}
+                      >
+                        <p className="font-semibold text-foreground">Você assume</p>
+                        <p className="mt-0.5 text-[10.5px] opacity-80">+conversão, -margem</p>
+                      </button>
+                    </div>
+                    {vendedorAssumeFrete && (
+                      <label className="fade-in mt-1 flex animate-in items-center justify-between gap-3 text-[12px]">
+                        <span className="text-muted-foreground">Custo estimado do frete</span>
+                        <input
+                          type="number"
+                          min={0}
+                          step={0.5}
+                          value={custoFrete || ""}
+                          onChange={(event) => setCustoFrete(Number(event.target.value) || 0)}
+                          placeholder="0,00"
+                          className="w-24 rounded-md border bg-background px-2 py-1 text-right font-mono focus:border-primary focus:outline-none"
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border">
+              <button
+                type="button"
+                onClick={() => setKeywordsOpen((current) => !current)}
+                className="flex w-full items-center gap-2 px-4 py-3.5 text-left"
+              >
+                <Sparkles className="size-3.5 text-muted-foreground" strokeWidth={2} />
+                <div className="flex-1">
+                  <p className="font-semibold text-[13px]">Palavras-chave para o bot</p>
+                  <p className="font-normal text-[11px] text-muted-foreground">
+                    {tags.length > 0
+                      ? `${tags.length} palavra${tags.length > 1 ? "s" : ""} definida${tags.length > 1 ? "s" : ""}`
+                      : "Ajuda o bot de WhatsApp a reconhecer o produto"}
+                  </p>
+                </div>
+                <ChevronDown
+                  className={cn(
+                    "size-4 shrink-0 text-muted-foreground transition-transform duration-200",
+                    keywordsOpen && "rotate-180",
+                  )}
+                  strokeWidth={2}
+                />
+              </button>
+              <div
+                className="grid transition-[grid-template-rows] duration-300 ease-out"
+                style={{ gridTemplateRows: keywordsOpen ? "1fr" : "0fr" }}
+              >
+                <div className="overflow-hidden">
+                  <div className="flex flex-col gap-2 border-t px-4 pt-3 pb-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleGerarPalavrasChave}
+                      disabled={keywordsAction.isLoading}
+                      className="w-fit"
+                    >
+                      <Sparkles data-icon="inline-start" className="size-3.5" strokeWidth={2} />
+                      {keywordsAction.isLoading ? "Gerando..." : "Gerar com IA"}
+                    </Button>
+                    {tags.length > 0 && (
+                      <div className="fade-in flex animate-in flex-wrap gap-1.5">
+                        {tags.map((tag) => (
+                          <Badge key={tag} variant="secondary" className="gap-1 pr-1.5 text-[10.5px]">
+                            {tag}
+                            <button
+                              type="button"
+                              onClick={() => setTags((current) => current.filter((item) => item !== tag))}
+                              aria-label={`Remover ${tag}`}
+                              className="text-muted-foreground/70 transition-colors hover:text-destructive"
+                            >
+                              <XIcon className="size-2.5" strokeWidth={2.5} />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    {keywordsAction.error && (
+                      <Alert variant="destructive" className="mt-1">
+                        <AlertDescription>{keywordsAction.error}</AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {afiliarState.error && !afiliarState.alreadyAffiliatedProductId && (
+              <Alert variant="destructive">
+                <AlertDescription>{afiliarState.error}</AlertDescription>
+              </Alert>
+            )}
+
+            {afiliarState.alreadyAffiliatedProductId && (
+              <div className="fade-in flex animate-in flex-col gap-3 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.06] p-4">
+                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className="size-4 shrink-0" strokeWidth={2} />
+                  <p className="font-semibold text-[13px]">Este produto já está no seu catálogo</p>
+                </div>
+                <p className="text-[12px] text-muted-foreground">
+                  Não é possível afiliar o mesmo produto duas vezes. Abra a ficha já salva para editar preço, estoque ou
+                  qualquer outro dado.
+                </p>
+              </div>
+            )}
+
+            {afiliarState.data && (
+              <div className="fade-in flex animate-in flex-col gap-3 rounded-2xl border border-primary/25 bg-primary/[0.06] p-4">
+                <div className="flex items-center gap-2 text-primary">
+                  <CheckCircle2 className="size-4 shrink-0" strokeWidth={2} />
+                  <p className="font-semibold text-[13px]">Produto salvo e ativo na sua vitrine</p>
+                </div>
+
+                {afiliarState.data.warning && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{afiliarState.data.warning}</AlertDescription>
+                  </Alert>
+                )}
+
+                {afiliarState.data.link && (
+                  <div className="flex items-center gap-2 rounded-lg border bg-background p-2.5">
+                    <p className="min-w-0 flex-1 truncate font-mono text-[11.5px]">{afiliarState.data.link}</p>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const link = afiliarState.data?.link;
+                        if (!link) return;
+                        await navigator.clipboard.writeText(link);
+                        setLinkCopied(true);
+                        setTimeout(() => setLinkCopied(false), 1800);
+                      }}
+                      aria-label="Copiar link de checkout"
+                      className="flex shrink-0 items-center gap-1 rounded-md border px-2 py-1 font-mono text-[10.5px] transition-colors hover:border-primary hover:text-primary"
+                    >
+                      {linkCopied ? (
+                        <>
+                          <Check className="size-3" strokeWidth={2.5} /> Copiado
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="size-3" strokeWidth={2} /> Copiar
+                        </>
+                      )}
+                    </button>
+                    <a
+                      href={afiliarState.data.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Abrir link de checkout"
+                      className="shrink-0 text-muted-foreground transition-colors hover:text-primary"
+                    >
+                      <ExternalLink className="size-3.5" strokeWidth={2} />
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -720,13 +762,13 @@ export function CatalogAffiliateSheet({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[10.5px] text-muted-foreground">Preço de venda</p>
-                <p className="font-mono text-base font-bold tabular-nums">R$ {formatarMoeda(precoVenda)}</p>
+                <p className="font-bold font-mono text-base tabular-nums">R$ {formatarMoeda(precoVenda)}</p>
               </div>
               <div className={cn("rounded-lg border px-2.5 py-1 text-right", statusStyle.bg, statusStyle.border)}>
-                <p className={cn("font-mono text-[10px] font-bold uppercase tracking-[0.05em]", statusStyle.text)}>
+                <p className={cn("font-bold font-mono text-[10px] uppercase tracking-[0.05em]", statusStyle.text)}>
                   {statusStyle.label}
                 </p>
-                <p className={cn("font-mono text-[11px] font-semibold tabular-nums", statusStyle.text)}>
+                <p className={cn("font-mono font-semibold text-[11px] tabular-nums", statusStyle.text)}>
                   margem {calculo.margem.toFixed(0)}%
                 </p>
               </div>
@@ -738,7 +780,11 @@ export function CatalogAffiliateSheet({
               <Button type="button" variant="outline" onClick={onClose} className="flex-1">
                 Fechar
               </Button>
-              <Button type="button" onClick={() => onViewExisting?.(afiliarState.alreadyAffiliatedProductId!)} className="flex-[2]">
+              <Button
+                type="button"
+                onClick={() => onViewExisting?.(afiliarState.alreadyAffiliatedProductId!)}
+                className="flex-[2]"
+              >
                 Ver produto salvo
               </Button>
             </div>

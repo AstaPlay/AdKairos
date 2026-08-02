@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
+
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";

@@ -1,7 +1,8 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+
+import { getEnxameHealth, getEnxamePoolStats, getEnxameUsage, isEnxameConfigured } from "@/lib/enxame-client";
 import { requireAuthenticatedUser } from "@/lib/require-authenticated-user";
 import { toSafeApiErrorMessage } from "@/utils/to-safe-api-error-message";
-import { getEnxameHealth, getEnxamePoolStats, getEnxameUsage, isEnxameConfigured } from "@/lib/enxame-client";
 
 /**
  * GET — status agregado do Enxame para a tela "Central de IA": saúde do
@@ -11,17 +12,26 @@ import { getEnxameHealth, getEnxamePoolStats, getEnxameUsage, isEnxameConfigured
  * exposta ao navegador.
  */
 export async function GET(request: NextRequest) {
-  let user;
+  let user: Awaited<ReturnType<typeof requireAuthenticatedUser>>;
   try {
     user = await requireAuthenticatedUser(request);
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: { code: "auth_check_failed", message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão.") } },
+      {
+        success: false,
+        error: {
+          code: "auth_check_failed",
+          message: toSafeApiErrorMessage(error, "Não foi possível validar sua sessão."),
+        },
+      },
       { status: 500 },
     );
   }
   if (!user) {
-    return NextResponse.json({ success: false, error: { code: "unauthenticated", message: "Sessão inválida." } }, { status: 401 });
+    return NextResponse.json(
+      { success: false, error: { code: "unauthenticated", message: "Sessão inválida." } },
+      { status: 401 },
+    );
   }
 
   if (!isEnxameConfigured()) {

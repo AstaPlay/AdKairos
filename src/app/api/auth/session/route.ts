@@ -1,6 +1,7 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+
 import { createSessionCookie, verifySessionCookie } from "@/firebase/session";
-import { SESSION_COOKIE_NAME, SESSION_COOKIE_MAX_AGE_MS, SESSION_COOKIE_OPTIONS } from "@/lib/cookies";
+import { SESSION_COOKIE_MAX_AGE_MS, SESSION_COOKIE_NAME, SESSION_COOKIE_OPTIONS } from "@/lib/cookies";
 
 /**
  * POST — troca um idToken do Firebase Auth (client) por um cookie de sessão
