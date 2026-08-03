@@ -247,12 +247,14 @@ export async function getWhatsAppSession(externalUserId: string, sessionId: stri
 }
 
 export type SentMessageJobStatus = "pending" | "processing" | "done" | "failed";
+export type MessageDeliveryStatus = "sent" | "delivered" | "read" | "failed";
 
 export interface SentMessageRecord {
   id: string;
   toJid: string;
   type: "text" | "image" | "video" | "document" | "audio" | "contact" | "location" | "buttons";
   status: SentMessageJobStatus;
+  deliveryStatus: MessageDeliveryStatus | null;
   lastError: string | null;
   createdAt: string;
   processedAt: string | null;

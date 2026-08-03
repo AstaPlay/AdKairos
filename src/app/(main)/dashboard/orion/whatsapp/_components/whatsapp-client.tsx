@@ -57,6 +57,7 @@ interface SentMessage {
   toJid: string;
   type: "text" | "image" | "video" | "document" | "audio" | "contact" | "location" | "buttons";
   status: SentMessageJobStatus;
+  deliveryStatus: "sent" | "delivered" | "read" | "failed" | null;
   lastError: string | null;
   createdAt: string;
   processedAt: string | null;
@@ -295,8 +296,15 @@ function PairingPanel({ sessionId, onConnected }: { sessionId: string; onConnect
 const MESSAGE_STATUS_LABEL: Record<SentMessageJobStatus, string> = {
   pending: "Na fila",
   processing: "Enviando",
-  done: "Entregue ao worker",
+  done: "Processado",
   failed: "Falhou",
+};
+
+const DELIVERY_STATUS_LABEL: Record<"sent" | "delivered" | "read" | "failed", string> = {
+  sent: "Enviada",
+  delivered: "Entregue",
+  read: "Lida",
+  failed: "Falha na entrega",
 };
 
 const MESSAGE_TYPE_LABEL: Record<SentMessage["type"], string> = {
@@ -333,6 +341,31 @@ function MessageStatusBadge({ status }: { status: SentMessageJobStatus }) {
     );
   }
   return <Badge variant="secondary">{MESSAGE_STATUS_LABEL[status]}</Badge>;
+}
+
+function DeliveryStatusBadge({ status }: { status: "sent" | "delivered" | "read" | "failed" | null }) {
+  if (!status) return <span className="text-muted-foreground text-xs">—</span>;
+  if (status === "read") {
+    return (
+      <Badge className="border-sky-600/20 bg-sky-600/10 text-sky-700 dark:text-sky-400" variant="outline">
+        {DELIVERY_STATUS_LABEL[status]}
+      </Badge>
+    );
+  }
+  if (status === "delivered") {
+    return (
+      <Badge
+        className="border-emerald-600/20 bg-emerald-600/10 text-emerald-700 dark:text-emerald-400"
+        variant="outline"
+      >
+        {DELIVERY_STATUS_LABEL[status]}
+      </Badge>
+    );
+  }
+  if (status === "failed") {
+    return <Badge variant="destructive">{DELIVERY_STATUS_LABEL[status]}</Badge>;
+  }
+  return <Badge variant="secondary">{DELIVERY_STATUS_LABEL[status]}</Badge>;
 }
 
 /**
@@ -459,7 +492,10 @@ function MessageHistorySheet({
               <div key={message.id} className="flex flex-col gap-1 rounded-lg border p-3 text-sm">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium">{message.toJid.replace("@s.whatsapp.net", "")}</span>
-                  <MessageStatusBadge status={message.status} />
+                  <div className="flex items-center gap-1.5">
+                    {message.status === "done" && <DeliveryStatusBadge status={message.deliveryStatus} />}
+                    <MessageStatusBadge status={message.status} />
+                  </div>
                 </div>
                 <div className="flex items-center justify-between gap-2 text-muted-foreground text-xs">
                   <span>{MESSAGE_TYPE_LABEL[message.type]}</span>
