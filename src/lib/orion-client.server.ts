@@ -315,6 +315,65 @@ export async function disconnectWhatsAppSession(externalUserId: string, sessionI
   }
 }
 
+export interface BotConfig {
+  ownerId: string;
+  agentName: string;
+  triggerKeywords: string[];
+  isBotReply: string;
+  audioFallbackReply: string;
+  retryLimit: number;
+  retryIntervalHours: number;
+  extraInstructions: string | null;
+  objectionPlaybook: string | null;
+  maxAutonomousDiscountPercent: number;
+  businessHoursStart: number;
+  businessHoursEnd: number;
+  businessTimezone: string;
+  shadowMode: boolean;
+  reactivationEnabled: boolean;
+  reactivationInactiveDays: number;
+  reactivationMessage: string;
+  isActive: boolean;
+  maxRepeatedCommentRepliesPerAuthor: number;
+  checkoutAbandonedFollowUpEnabled: boolean;
+  checkoutAbandonedFollowUpDays: number;
+  checkoutAbandonedFollowUpMessage: string;
+}
+
+export type UpdateBotConfigInput = Omit<BotConfig, "ownerId">;
+
+/**
+ * GET /bot-config — configuração do bot de atendimento do dono
+ * autenticado. Sem `:id` na rota do Órion: `ownerId` vem do próprio
+ * token (ver `atendimento-routes.ts`). Devolve os valores padrão se o
+ * owner ainda não tiver salvo nada (o Órion não persiste nada só de
+ * ler — só grava no primeiro PUT).
+ */
+export async function getBotConfig(externalUserId: string): Promise<BotConfig> {
+  const response = await orionAuthedRequest(externalUserId, "/bot-config");
+  if (!response.ok) {
+    throw new Error(`Falha ao buscar configuração do bot no Órion (HTTP ${response.status})`);
+  }
+  const json = (await response.json()) as { config: BotConfig };
+  return json.config;
+}
+
+/**
+ * PUT /bot-config — substitui a configuração inteira (upsert). Replace
+ * completo, não merge parcial: sempre manda o formulário inteiro.
+ */
+export async function updateBotConfig(externalUserId: string, input: UpdateBotConfigInput): Promise<BotConfig> {
+  const response = await orionAuthedRequest(externalUserId, "/bot-config", {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    throw new Error(`Falha ao salvar configuração do bot no Órion (HTTP ${response.status})`);
+  }
+  const json = (await response.json()) as { config: BotConfig };
+  return json.config;
+}
+
 interface ServiceTokenCacheEntry {
   accessToken: string;
   /** Epoch ms a partir do qual o token é considerado vencido para fins de cache (antes do vencimento real do Órion). */
