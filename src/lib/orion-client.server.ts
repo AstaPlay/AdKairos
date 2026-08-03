@@ -474,3 +474,163 @@ export async function getServiceAccessToken(externalUserId: string): Promise<str
 
   return json.accessToken;
 }
+
+// ── Super Cérebro ───────────────────────────────────────────────────
+
+export interface AnalyzeInstagramPerformanceResult {
+  diagnosis: string;
+  topPostIds: string[];
+  weakestPostIds: string[];
+}
+
+/**
+ * POST /super-cerebro/analyze-instagram-performance — o Órion busca os
+ * dados do Instagram internamente (via conta já conectada) a partir do
+ * período informado; não é preciso mandar posts/métricas daqui.
+ */
+export async function analyzeInstagramPerformance(
+  externalUserId: string,
+  input: { periodStart: string; periodEnd: string; limit?: number },
+): Promise<AnalyzeInstagramPerformanceResult> {
+  const response = await orionAuthedRequest(externalUserId, "/super-cerebro/analyze-instagram-performance", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    throw new Error(`Falha ao analisar performance do Instagram (HTTP ${response.status})`);
+  }
+  return (await response.json()) as AnalyzeInstagramPerformanceResult;
+}
+
+export interface AnalyzeAdsPerformanceResult {
+  diagnosis: string;
+  bestCampaignIds: string[];
+  worstCampaignIds: string[];
+}
+
+/** POST /super-cerebro/analyze-ads-performance — mesma lógica do Instagram, mas para campanhas Meta Ads. */
+export async function analyzeAdsPerformance(
+  externalUserId: string,
+  input: { periodStart: string; periodEnd: string },
+): Promise<AnalyzeAdsPerformanceResult> {
+  const response = await orionAuthedRequest(externalUserId, "/super-cerebro/analyze-ads-performance", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    throw new Error(`Falha ao analisar performance de Ads (HTTP ${response.status})`);
+  }
+  return (await response.json()) as AnalyzeAdsPerformanceResult;
+}
+
+export type StrategyAttemptSignal = "weak_post" | "lost_sale" | "recurring_objection" | "successful_pattern";
+
+export interface GenerateStrategicDiagnosisResult {
+  recommendation: string;
+  attempt: {
+    id: string;
+    ownerId: string;
+    signal: StrategyAttemptSignal;
+    context: string;
+    identifiedPattern: string;
+    strategyAdjustment: string;
+    status: "pending" | "applied" | "discarded";
+    observedOutcome: string | null;
+    createdAt: string;
+    updatedAt: string;
+  };
+}
+
+/**
+ * POST /super-cerebro/generate-strategic-diagnosis — cruza os textos
+ * de diagnóstico (Instagram e/ou Ads, ao menos um dos dois) com o
+ * histórico de tentativas passadas e recomenda um próximo passo.
+ */
+export async function generateStrategicDiagnosis(
+  externalUserId: string,
+  input: { instagramDiagnosis: string | null; adsDiagnosis: string | null; signal: StrategyAttemptSignal },
+): Promise<GenerateStrategicDiagnosisResult> {
+  const response = await orionAuthedRequest(externalUserId, "/super-cerebro/generate-strategic-diagnosis", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    throw new Error(`Falha ao gerar diagnóstico estratégico (HTTP ${response.status})`);
+  }
+  return (await response.json()) as GenerateStrategicDiagnosisResult;
+}
+
+export type SocialContentGoal = "drive_dm" | "drive_link_click" | "boost_engagement";
+
+export interface GenerateSocialContentResult {
+  caption: string;
+  callToAction: string;
+}
+
+/** POST /super-cerebro/generate-social-content — legenda + CTA avulsos para um produto, sem depender de diagnóstico prévio. */
+export async function generateSocialContent(
+  externalUserId: string,
+  input: { productName: string; productDescription: string | null; brandTone: string | null; goal: SocialContentGoal },
+): Promise<GenerateSocialContentResult> {
+  const response = await orionAuthedRequest(externalUserId, "/super-cerebro/generate-social-content", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    throw new Error(`Falha ao gerar conteúdo social (HTTP ${response.status})`);
+  }
+  return (await response.json()) as GenerateSocialContentResult;
+}
+
+export type ContentScriptFormat = "reels" | "static_post";
+
+export interface ContentScriptScene {
+  order: number;
+  visualDirection: string;
+  narration: string;
+}
+
+export interface GenerateContentScriptResult {
+  format: ContentScriptFormat;
+  formatRationale: string;
+  scenes: ContentScriptScene[];
+  caption: string;
+}
+
+/**
+ * POST /super-cerebro/generate-content-script — roteiro de reels ou
+ * post estático (a IA decide o formato) a partir de um produto do
+ * catálogo. `productId` é o UUID do Supabase (Órion), não o id do
+ * Firestore — resolver com `findProductIdByExternalId` antes de chamar.
+ */
+export async function generateContentScript(
+  externalUserId: string,
+  input: { productId: string; strategicContext: string | null; brandTone: string | null },
+): Promise<GenerateContentScriptResult> {
+  const response = await orionAuthedRequest(externalUserId, "/super-cerebro/generate-content-script", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    throw new Error(`Falha ao gerar roteiro de conteúdo (HTTP ${response.status})`);
+  }
+  return (await response.json()) as GenerateContentScriptResult;
+}
+
+/**
+ * GET /products/by-external-id/:externalId — resolve o `productId`
+ * (UUID do Supabase) a partir do id do documento Firestore do produto
+ * no AdKairos. Necessário porque os dois catálogos usam identificadores
+ * diferentes, correlacionados via sync (`products/sync`).
+ */
+export async function findProductIdByExternalId(externalUserId: string, externalId: string): Promise<string> {
+  const response = await orionAuthedRequest(
+    externalUserId,
+    `/products/by-external-id/${encodeURIComponent(externalId)}`,
+  );
+  if (!response.ok) {
+    throw new Error(`Produto não sincronizado com o Órion ainda (HTTP ${response.status})`);
+  }
+  const json = (await response.json()) as { productId: string };
+  return json.productId;
+}
