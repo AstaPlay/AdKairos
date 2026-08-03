@@ -1,7 +1,6 @@
-import { Target } from "lucide-react";
 import type { Metadata } from "next";
 
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { AdsClient } from "./_components/ads-client";
 
 export const metadata: Metadata = {
   title: "Órion · Ads",
@@ -15,18 +14,7 @@ export default function Page() {
         <p className="text-muted-foreground text-sm">Desempenho das campanhas de anúncios monitoradas pelo Órion.</p>
       </div>
 
-      <Empty className="rounded-xl border">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <Target />
-          </EmptyMedia>
-          <EmptyTitle>Insights de campanhas ainda não conectados</EmptyTitle>
-          <EmptyDescription>
-            Esta tela vai mostrar os insights de campanhas de anúncios que o Órion coleta, para acompanhar desempenho
-            sem sair do painel.
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
+      <AdsClient />
     </div>
   );
 }

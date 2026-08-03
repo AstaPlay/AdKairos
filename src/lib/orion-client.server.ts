@@ -634,3 +634,61 @@ export async function findProductIdByExternalId(externalUserId: string, external
   const json = (await response.json()) as { productId: string };
   return json.productId;
 }
+
+// ── Ads ──────────────────────────────────────────────────────────────
+
+/**
+ * PUT /ads/account — configura o Ad Account (formato "act_<id>") do
+ * owner autenticado. Exige que o Instagram já esteja conectado (mesma
+ * credencial Meta autentica Instagram e a Marketing API de Ads) —
+ * o Órion devolve 409 se ainda não houver canal.
+ */
+export async function configureAdAccount(
+  externalUserId: string,
+  adAccountId: string,
+): Promise<{ adAccountId: string }> {
+  const response = await orionAuthedRequest(externalUserId, "/ads/account", {
+    method: "PUT",
+    body: JSON.stringify({ adAccountId }),
+  });
+  if (!response.ok) {
+    throw new Error(`Falha ao configurar conta de anúncios (HTTP ${response.status})`);
+  }
+  return (await response.json()) as { adAccountId: string };
+}
+
+export type AdCampaignObjective = "SALES" | "TRAFFIC" | "ENGAGEMENT" | "LEADS" | "AWARENESS" | "OTHER";
+export type AdCampaignStatus = "ACTIVE" | "PAUSED" | "DELETED" | "ARCHIVED";
+
+export interface AdCampaignSummary {
+  id: string;
+  name: string;
+  objective: AdCampaignObjective;
+  status: AdCampaignStatus;
+  spend: number;
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  cpc: number | null;
+  cpa: number | null;
+  conversions: number | null;
+}
+
+/**
+ * GET /ads/campaigns — campanhas com métricas cruas do período, sem
+ * passar pelo Enxame (IA) — diferente de `analyzeAdsPerformance`
+ * (Super Cérebro), que gera um diagnóstico em texto a partir dos
+ * mesmos dados.
+ */
+export async function listAdCampaigns(
+  externalUserId: string,
+  input: { periodStart: string; periodEnd: string },
+): Promise<AdCampaignSummary[]> {
+  const params = new URLSearchParams({ periodStart: input.periodStart, periodEnd: input.periodEnd });
+  const response = await orionAuthedRequest(externalUserId, `/ads/campaigns?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error(`Falha ao listar campanhas de Ads (HTTP ${response.status})`);
+  }
+  const json = (await response.json()) as { campaigns: AdCampaignSummary[] };
+  return json.campaigns;
+}
