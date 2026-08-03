@@ -374,6 +374,47 @@ export async function updateBotConfig(externalUserId: string, input: UpdateBotCo
   return json.config;
 }
 
+export interface InstagramConnectionStatus {
+  connected: boolean;
+  igUserId?: string;
+  username?: string;
+  tokenExpiresAt?: string;
+}
+
+/** GET /instagram/connection — status da conexão Instagram do dono autenticado. */
+export async function getInstagramConnectionStatus(externalUserId: string): Promise<InstagramConnectionStatus> {
+  const response = await orionAuthedRequest(externalUserId, "/instagram/connection");
+  if (!response.ok) {
+    throw new Error(`Falha ao buscar status da conexão Instagram (HTTP ${response.status})`);
+  }
+  const json = (await response.json()) as { status: InstagramConnectionStatus };
+  return json.status;
+}
+
+/** DELETE /instagram/connection — desconecta a conta Instagram do dono autenticado. */
+export async function disconnectInstagramConnection(externalUserId: string): Promise<void> {
+  const response = await orionAuthedRequest(externalUserId, "/instagram/connection", { method: "DELETE" });
+  if (!response.ok) {
+    throw new Error(`Falha ao desconectar Instagram (HTTP ${response.status})`);
+  }
+}
+
+/**
+ * Monta a URL de início do fluxo OAuth (`GET /instagram/oauth/start` no
+ * Órion). Não é uma chamada de API — é navegação de browser, então o
+ * client (`bot-config-api.ts`-equivalente do submenu Instagram) só
+ * precisa desta URL para um `window.location.href = ...`. O
+ * `accessToken` vai por query de propósito (ver nota em
+ * `instagram-oauth-routes.ts` no Órion: navegação de página não carrega
+ * `Authorization` header).
+ */
+export async function buildInstagramOAuthStartUrl(externalUserId: string): Promise<string> {
+  const accessToken = await getServiceAccessToken(externalUserId);
+  const url = new URL("/instagram/oauth/start", BASE_URL);
+  url.searchParams.set("accessToken", accessToken);
+  return url.toString();
+}
+
 interface ServiceTokenCacheEntry {
   accessToken: string;
   /** Epoch ms a partir do qual o token é considerado vencido para fins de cache (antes do vencimento real do Órion). */
